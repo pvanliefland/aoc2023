@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 mod day01;
 
 fn main() {
-    let days = vec![day01::run];
+    let days = [day01::run];
 
     let range = if let Some(day) = env::args().nth(1) {
         let day = day.parse().expect("Invalid day provided");
@@ -25,9 +25,9 @@ fn main() {
                 if sample { ".sample" } else { "" }
             );
             let input = read_to_string(file_name.clone())
-            .expect(&*format!("File {file_name} not found"))
-            .trim()
-            .to_string();
+                .unwrap_or_else(|_| panic!("File {file_name} not found"))
+                .trim()
+                .to_string();
 
             day_func(&input, sample);
 
