@@ -17,7 +17,8 @@ fn main() {
         println!("================ Day {day} ================");
         let now = Instant::now();
 
-        println!("Output: {}", day_func(read_input(day, false)));
+        println!("Outputs:");
+        day_func(read_input(&format!("day{:0>2}", day)));
 
         let duration = now.elapsed();
         if duration > Duration::from_secs(2) {
