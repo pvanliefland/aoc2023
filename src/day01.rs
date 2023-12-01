@@ -21,7 +21,7 @@ fn sum_calibration_values(input: String, parse_text_digits: bool) -> u32 {
                     .replace("eight", "e8t")
                     .replace("nine", "n9e")
             } else {
-                String::from(line)
+                line.to_string()
             }
         })
         .map(|line| {
@@ -29,7 +29,7 @@ fn sum_calibration_values(input: String, parse_text_digits: bool) -> u32 {
                 .filter_map(|c| c.to_digit(10))
                 .collect::<Vec<_>>()
         })
-        .map(|l| 10 * l.first().unwrap() + l.last().unwrap())
+        .map(|l| 10 * l.first().expect("No digit found 😿") + l.last().expect("No digit found 😿"))
         .sum()
 }
 #[cfg(test)]
