@@ -13,6 +13,26 @@ pub fn run(input: String) {
     println!("Part 2: {}", sum_of_minimum_draw_powers(&games));
 }
 
+fn sum_of_possible_games(games: &[(usize, Draw)], max_possible_draw: Draw) -> usize {
+    games
+        .iter()
+        .filter_map(|(game_id, draw)| {
+            if draw.0 <= max_possible_draw.0
+                && draw.1 <= max_possible_draw.1
+                && draw.2 <= max_possible_draw.2
+            {
+                Some(game_id)
+            } else {
+                None
+            }
+        })
+        .sum()
+}
+
+fn sum_of_minimum_draw_powers(games: &[(usize, Draw)]) -> usize {
+    games.iter().map(|(_, max_draw)| max_draw.power()).sum()
+}
+
 fn parse_input(input: String) -> Vec<(usize, Draw)> {
     input
         .lines()
@@ -35,31 +55,11 @@ fn parse_input(input: String) -> Vec<(usize, Draw)> {
                             }
                         })
                     })
-                    .reduce(|acc, e| acc.max(&e))
+                    .reduce(Draw::max)
                     .expect("🙄"),
             )
         })
         .collect()
-}
-
-fn sum_of_possible_games(games: &[(usize, Draw)], max_possible_draw: Draw) -> usize {
-    games
-        .iter()
-        .filter_map(|(game_id, draw)| {
-            if draw.0 <= max_possible_draw.0
-                && draw.1 <= max_possible_draw.1
-                && draw.2 <= max_possible_draw.2
-            {
-                Some(game_id)
-            } else {
-                None
-            }
-        })
-        .sum()
-}
-
-fn sum_of_minimum_draw_powers(games: &[(usize, Draw)]) -> usize {
-    games.iter().map(|(_, max_draw)| max_draw.power()).sum()
 }
 
 #[derive(Debug)]
@@ -74,7 +74,7 @@ impl Add for Draw {
 }
 
 impl Draw {
-    fn max(&self, other: &Draw) -> Self {
+    fn max(self, other: Draw) -> Self {
         Self(
             self.0.max(other.0),
             self.1.max(other.1),
