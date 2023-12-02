@@ -1,14 +1,69 @@
 use std::ops::Add;
 
 pub fn run(input: String) {
-    let possible_games = possible_games(input, Draw(12, 13, 14));
+    let games = parse_input(input);
 
-    println!("{:?}", possible_games);
-    println!("{}", possible_games.iter().sum::<usize>());
+    // Part 1
+    println!(
+        "Part 1: {}",
+        sum_of_possible_games(&games, Draw(12, 13, 14))
+    );
+
+    // Part 2
+    println!("Part 2: {}", sum_of_minimum_draw_powers(&games));
+}
+
+fn parse_input(input: String) -> Vec<(usize, Draw)> {
+    input
+        .lines()
+        .map(|line| {
+            let (game, draw_data) = line.split_once(": ").expect("😿");
+            let game_id: usize = game[5..].parse().expect("🙄");
+            (
+                game_id,
+                draw_data
+                    .split("; ")
+                    .map(|draw| {
+                        draw.split(", ").fold(Draw(0, 0, 0), |draw, num_for_color| {
+                            let (num, color) = num_for_color.split_once(' ').expect("😿");
+                            let num: usize = num.parse().expect("🤯");
+                            match color {
+                                "red" => draw + Draw(num, 0, 0),
+                                "green" => draw + Draw(0, num, 0),
+                                "blue" => draw + Draw(0, 0, num),
+                                _ => panic!("🤬"),
+                            }
+                        })
+                    })
+                    .reduce(|acc, e| acc.max(&e))
+                    .expect("🙄"),
+            )
+        })
+        .collect()
+}
+
+fn sum_of_possible_games(games: &[(usize, Draw)], max_possible_draw: Draw) -> usize {
+    games
+        .iter()
+        .filter_map(|(game_id, draw)| {
+            if draw.0 <= max_possible_draw.0
+                && draw.1 <= max_possible_draw.1
+                && draw.2 <= max_possible_draw.2
+            {
+                Some(game_id)
+            } else {
+                None
+            }
+        })
+        .sum()
+}
+
+fn sum_of_minimum_draw_powers(games: &[(usize, Draw)]) -> usize {
+    games.iter().map(|(_, max_draw)| max_draw.power()).sum()
 }
 
 #[derive(Debug)]
-struct Draw(u8, u8, u8);
+struct Draw(usize, usize, usize);
 
 impl Add for Draw {
     type Output = Draw;
@@ -26,56 +81,26 @@ impl Draw {
             self.2.max(other.2),
         )
     }
-}
 
-fn possible_games(input: String, max_draw: Draw) -> Vec<usize> {
-    input
-        .lines()
-        .map(|line| {
-            let (game, draw_data) = line.split_once(": ").expect("😿");
-            let game_id: usize = game[5..].parse().expect("🙄");
-            (
-                game_id,
-                draw_data
-                    .split("; ")
-                    .map(|draw| {
-                        draw.split(", ").fold(Draw(0, 0, 0), |draw, num_for_color| {
-                            let (num, color) = num_for_color.split_once(' ').expect("😿");
-                            let num: u8 = num.parse().expect("🤯");
-                            match color {
-                                "red" => draw + Draw(num, 0, 0),
-                                "green" => draw + Draw(0, num, 0),
-                                "blue" => draw + Draw(0, 0, num),
-                                _ => panic!("🤬"),
-                            }
-                        })
-                    })
-                    .reduce(|acc, e| acc.max(&e))
-                    .expect("🙄"),
-            )
-        })
-        .filter_map(|(game_id, draw)| {
-            if draw.0 <= max_draw.0 && draw.1 <= max_draw.1 && draw.2 <= max_draw.2 {
-                Some(game_id)
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>()
+    fn power(&self) -> usize {
+        self.0 * self.1 * self.2
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::day02::{possible_games, Draw};
+    use super::*;
     use crate::read_input;
 
     #[test]
     fn test_day02_part_1() {
-        assert_eq!(
-            possible_games(read_input("day02.test"), Draw(12, 13, 14))
-                .iter()
-                .sum::<usize>(),
-            8
-        );
+        let games = parse_input(read_input("day02.test"));
+        assert_eq!(sum_of_possible_games(&games, Draw(12, 13, 14)), 8);
+    }
+
+    #[test]
+    fn test_day02_part_2() {
+        let games = parse_input(read_input("day02.test"));
+        assert_eq!(sum_of_minimum_draw_powers(&games), 2286);
     }
 }

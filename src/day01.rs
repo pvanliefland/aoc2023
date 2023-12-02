@@ -1,9 +1,9 @@
 pub fn run(input: String) {
     // Part 1
-    println!("{}", sum_calibration_values(input.clone(), false));
+    println!("Part 1: {}", sum_calibration_values(input.clone(), false));
 
     // Part 2
-    println!("{}", sum_calibration_values(input, true));
+    println!("Part 2: {}", sum_calibration_values(input, true));
 }
 
 fn sum_calibration_values(input: String, parse_text_digits: bool) -> u32 {
@@ -34,7 +34,7 @@ fn sum_calibration_values(input: String, parse_text_digits: bool) -> u32 {
 }
 #[cfg(test)]
 mod tests {
-    use super::sum_calibration_values;
+    use super::*;
     use crate::read_input;
 
     #[test]
