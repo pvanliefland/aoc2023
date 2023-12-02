@@ -3,7 +3,7 @@ use std::env;
 use std::time::{Duration, Instant};
 
 fn main() {
-    let days = [aoc2023::day01::run];
+    let days = [aoc2023::day01::run, aoc2023::day02::run];
 
     let range = if let Some(day) = env::args().nth(1) {
         let day = day.parse().expect("Invalid day provided");
