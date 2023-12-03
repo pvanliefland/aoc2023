@@ -69,6 +69,7 @@ struct PartNumber {
     value: u32,
     coords: Vec<Point>,
 }
+
 impl PartNumber {
     fn new(number_string: String, coords: Vec<Point>) -> Self {
         Self {

@@ -3,13 +3,10 @@ use std::ops::Add;
 pub fn run(input: String) {
     let games = parse_input(input);
 
-    // Part 1
     println!(
         "Part 1: {}",
         sum_of_possible_games(&games, Draw(12, 13, 14))
     );
-
-    // Part 2
     println!("Part 2: {}", sum_of_minimum_draw_powers(&games));
 }
 

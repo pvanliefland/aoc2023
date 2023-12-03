@@ -1,8 +1,5 @@
 pub fn run(input: String) {
-    // Part 1
     println!("Part 1: {}", sum_calibration_values(input.clone(), false));
-
-    // Part 2
     println!("Part 2: {}", sum_calibration_values(input, true));
 }
 
