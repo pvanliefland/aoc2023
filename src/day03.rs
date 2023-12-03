@@ -12,43 +12,54 @@ pub fn run(input: String) {
 }
 
 fn sum_adjacent_numbers(grid: &Grid, numbers: &HashSet<PartNumber>) -> u32 {
-    grid.iter()
-        .enumerate()
-        .flat_map(|(y, line)| {
-            line.iter()
-                .enumerate()
-                .filter(|(_, &char)| !char.is_ascii_digit() && char != '.')
-                .flat_map(|(x, _)| {
-                    numbers
-                        .iter()
-                        .filter(|number| number.is_adjacent_to((x as i32, y as i32)))
-                        .collect::<Vec<_>>()
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<HashSet<_>>()
-        .iter()
-        .map(|part_number| part_number.value)
-        .sum()
+    sum_values(
+        grid,
+        numbers,
+        |char| !char.is_ascii_digit() && char != '.',
+        None,
+        |parts| parts.iter().sum(),
+    )
 }
 
 fn sum_gear_ratios(grid: &Grid, numbers: &HashSet<PartNumber>) -> u32 {
+    sum_values(
+        grid,
+        numbers,
+        |char| char == '*',
+        Some(|parts| parts.len() == 2),
+        |parts| parts.iter().product(),
+    )
+}
+
+fn sum_values(
+    grid: &Grid,
+    numbers: &HashSet<PartNumber>,
+    char_filter: fn(char) -> bool,
+    parts_filter: Option<fn(&Vec<u32>) -> bool>,
+    parts_operation: fn(Vec<u32>) -> u32,
+) -> u32 {
     grid.iter()
         .enumerate()
         .flat_map(|(y, line)| {
             line.iter()
                 .enumerate()
-                .filter(|(_, &char)| char == '*')
+                .filter(|(_, &char)| char_filter(char))
                 .map(move |(x, _)| {
                     numbers
                         .iter()
-                        .filter(|number| number.is_adjacent_to((x as i32, y as i32)))
-                        .map(|part_number| part_number.value)
+                        .filter_map(|number| {
+                            if number.is_adjacent_to((x as i32, y as i32)) {
+                                Some(number.value)
+                            } else {
+                                None
+                            }
+                        })
                         .collect::<Vec<_>>()
                 })
                 .filter_map(|numbers| {
-                    if numbers.len() == 2 {
-                        Some(numbers.iter().product::<u32>())
+                    if parts_filter.is_none() || parts_filter.is_some_and(|filter| filter(&numbers))
+                    {
+                        Some(parts_operation(numbers))
                     } else {
                         None
                     }
