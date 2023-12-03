@@ -12,45 +12,49 @@ pub fn run(input: String) {
 }
 
 fn sum_adjacent_numbers(grid: &Grid, numbers: &HashSet<PartNumber>) -> u32 {
-    let mut adjacent_numbers: HashSet<PartNumber> = HashSet::new();
-    grid.iter().enumerate().for_each(|(y, line)| {
-        line.iter().enumerate().for_each(|(x, &char)| {
-            if !char.is_ascii_digit() && char != '.' {
-                numbers
-                    .iter()
-                    .filter(|number| number.is_adjacent_to((x as i32, y as i32)))
-                    .for_each(|number| {
-                        adjacent_numbers.insert(number.clone());
-                    });
-            }
-        });
-    });
-    adjacent_numbers
+    grid.iter()
+        .enumerate()
+        .flat_map(|(y, line)| {
+            line.iter()
+                .enumerate()
+                .filter(|(_, &char)| !char.is_ascii_digit() && char != '.')
+                .flat_map(|(x, _)| {
+                    numbers
+                        .iter()
+                        .filter(|number| number.is_adjacent_to((x as i32, y as i32)))
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<HashSet<_>>()
         .iter()
-        .map(|part_number| part_number.number)
+        .map(|part_number| part_number.value)
         .sum()
 }
 
 fn sum_gear_ratios(grid: &Grid, numbers: &HashSet<PartNumber>) -> u32 {
-    let mut sum = 0;
-    grid.iter().enumerate().for_each(|(y, line)| {
-        line.iter().enumerate().for_each(|(x, &char)| {
-            if char == '*' {
-                let mut adjacent_numbers = vec![];
-                numbers
-                    .iter()
-                    .filter(|number| number.is_adjacent_to((x as i32, y as i32)))
-                    .for_each(|part_number| {
-                        adjacent_numbers.push(part_number.number);
-                    });
-                if adjacent_numbers.len() == 2 {
-                    sum += adjacent_numbers.iter().product::<u32>();
-                }
-            }
-        });
-    });
-
-    sum
+    grid.iter()
+        .enumerate()
+        .flat_map(|(y, line)| {
+            line.iter()
+                .enumerate()
+                .filter(|(_, &char)| char == '*')
+                .map(move |(x, _)| {
+                    numbers
+                        .iter()
+                        .filter(|number| number.is_adjacent_to((x as i32, y as i32)))
+                        .map(|part_number| part_number.value)
+                        .collect::<Vec<_>>()
+                })
+                .filter_map(|numbers| {
+                    if numbers.len() == 2 {
+                        Some(numbers.iter().product::<u32>())
+                    } else {
+                        None
+                    }
+                })
+        })
+        .sum()
 }
 
 fn find_numbers(grid: &Grid) -> HashSet<PartNumber> {
@@ -88,14 +92,14 @@ type Point = (i32, i32);
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone)]
 struct PartNumber {
-    number: u32,
+    value: u32,
     coords: Vec<Point>,
 }
 
 impl PartNumber {
     fn new(number_string: String, coords: Vec<Point>) -> Self {
         Self {
-            number: number_string.parse().expect("🙄"),
+            value: number_string.parse().expect("🙄"),
             coords,
         }
     }
