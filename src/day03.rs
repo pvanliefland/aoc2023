@@ -1,17 +1,11 @@
-use std::collections::HashSet;
-
 pub fn run(input: String) {
-    let grid = parse_input(input);
-    let numbers = find_numbers(&grid);
+    let (numbers, grid) = parse_input(input);
 
-    // Part 1
     println!("Part 1: {}", sum_adjacent_numbers(&grid, &numbers));
-
-    // Part 2
     println!("Part 2: {}", sum_gear_ratios(&grid, &numbers));
 }
 
-fn sum_adjacent_numbers(grid: &Grid, numbers: &HashSet<PartNumber>) -> u32 {
+fn sum_adjacent_numbers(grid: &Grid, numbers: &[PartNumber]) -> u32 {
     sum_values(
         grid,
         numbers,
@@ -21,7 +15,7 @@ fn sum_adjacent_numbers(grid: &Grid, numbers: &HashSet<PartNumber>) -> u32 {
     )
 }
 
-fn sum_gear_ratios(grid: &Grid, numbers: &HashSet<PartNumber>) -> u32 {
+fn sum_gear_ratios(grid: &Grid, numbers: &[PartNumber]) -> u32 {
     sum_values(
         grid,
         numbers,
@@ -33,7 +27,7 @@ fn sum_gear_ratios(grid: &Grid, numbers: &HashSet<PartNumber>) -> u32 {
 
 fn sum_values(
     grid: &Grid,
-    numbers: &HashSet<PartNumber>,
+    numbers: &[PartNumber],
     char_filter: fn(char) -> bool,
     parts_filter: Option<fn(&Vec<u32>) -> bool>,
     parts_operation: fn(Vec<u32>) -> u32,
@@ -68,45 +62,13 @@ fn sum_values(
         .sum()
 }
 
-fn find_numbers(grid: &Grid) -> HashSet<PartNumber> {
-    grid.iter()
-        .enumerate()
-        .flat_map(|(y, line)| {
-            let mut numbers_in_line: Vec<PartNumber> = vec![];
-            let mut iter = line.iter().enumerate().peekable();
-            while let Some((x, &char)) = iter.next() {
-                if char.is_ascii_digit() {
-                    let mut coords = vec![(x as i32, y as i32)];
-                    let mut number_string = String::from(char);
-                    while iter
-                        .peek()
-                        .is_some_and(|(_, &next_char)| next_char.is_ascii_digit())
-                    {
-                        let (next_x, &next_char) = iter.next().expect("🤯");
-                        coords.push((next_x as i32, y as i32));
-                        number_string.push(next_char);
-                    }
-                    numbers_in_line.push(PartNumber::new(number_string, coords));
-                }
-            }
-            numbers_in_line
-        })
-        .collect()
-}
-
-fn parse_input(input: String) -> Grid {
-    input.lines().map(|line| line.chars().collect()).collect()
-}
-
 type Grid = Vec<Vec<char>>;
 type Point = (i32, i32);
 
-#[derive(Hash, Eq, PartialEq, Debug, Clone)]
 struct PartNumber {
     value: u32,
     coords: Vec<Point>,
 }
-
 impl PartNumber {
     fn new(number_string: String, coords: Vec<Point>) -> Self {
         Self {
@@ -123,6 +85,36 @@ impl PartNumber {
     }
 }
 
+fn parse_input(input: String) -> (Vec<PartNumber>, Grid) {
+    let grid: Grid = input.lines().map(|line| line.chars().collect()).collect();
+    (
+        grid.iter()
+            .enumerate()
+            .flat_map(|(y, line)| {
+                let mut numbers_in_line: Vec<PartNumber> = vec![];
+                let mut iter = line.iter().enumerate().peekable();
+                while let Some((x, &char)) = iter.next() {
+                    if char.is_ascii_digit() {
+                        let mut coords = vec![(x as i32, y as i32)];
+                        let mut number_string = String::from(char);
+                        while iter
+                            .peek()
+                            .is_some_and(|(_, &next_char)| next_char.is_ascii_digit())
+                        {
+                            let (next_x, &next_char) = iter.next().expect("🤯");
+                            coords.push((next_x as i32, y as i32));
+                            number_string.push(next_char);
+                        }
+                        numbers_in_line.push(PartNumber::new(number_string, coords));
+                    }
+                }
+                numbers_in_line
+            })
+            .collect(),
+        grid,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -130,17 +122,13 @@ mod tests {
 
     #[test]
     fn test_day03_part_1() {
-        let grid = parse_input(read_input("day03.test"));
-        let numbers = find_numbers(&grid);
-
+        let (numbers, grid) = parse_input(read_input("day03.test"));
         assert_eq!(sum_adjacent_numbers(&grid, &numbers), 4361);
     }
 
     #[test]
     fn test_day03_part_2() {
-        let grid = parse_input(read_input("day03.test"));
-        let numbers = find_numbers(&grid);
-
+        let (numbers, grid) = parse_input(read_input("day03.test"));
         assert_eq!(sum_gear_ratios(&grid, &numbers), 467835);
     }
 }
