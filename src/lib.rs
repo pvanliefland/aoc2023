@@ -3,6 +3,7 @@ use std::fs::read_to_string;
 pub mod day01;
 pub mod day02;
 pub mod day03;
+pub mod day04;
 
 pub fn read_input(name: &str) -> String {
     let file_name = format!("inputs/{name}.txt",);
