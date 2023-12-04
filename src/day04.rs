@@ -10,12 +10,9 @@ pub fn run(input: String) {
 fn total_card_points(cards: &[Card]) -> usize {
     cards
         .iter()
-        .map(|card| {
-            if card.1 == 0 {
-                0
-            } else {
-                2usize.pow((card.1 - 1) as u32)
-            }
+        .map(|card| match card.1 {
+            0 => 0,
+            n => 2usize.pow((n - 1) as u32),
         })
         .sum()
 }
