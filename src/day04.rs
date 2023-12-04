@@ -1,26 +1,34 @@
+use std::collections::{HashMap, HashSet};
+
 pub fn run(input: String) {
     let cards = parse_input(input);
 
     println!("Part 1: {}", total_card_points(&cards));
-    println!("Part 2: {}", "?");
+    println!("Part 2: {}", total_scratch_cards(&cards));
 }
 
-fn total_card_points(cards: &[Card]) -> i32 {
+fn total_card_points(cards: &[Card]) -> usize {
     cards
         .iter()
         .map(|card| {
-            card.2.iter().fold(0, |acc, e| {
-                if card.1.contains(e) {
-                    match acc {
-                        0 => 1,
-                        other => 2 * other,
-                    }
-                } else {
-                    acc
-                }
-            })
+            if card.1 == 0 {
+                0
+            } else {
+                2usize.pow((card.1 - 1) as u32)
+            }
         })
         .sum()
+}
+
+fn total_scratch_cards(cards: &[Card]) -> usize {
+    let mut counts: HashMap<usize, usize> = cards.iter().map(|card| (card.0, 1)).collect();
+    cards.iter().for_each(|card| {
+        ((card.0 + 1)..=(card.0 + card.1)).for_each(|card_number| {
+            let factor = *counts.get(&card.0).expect("🙄");
+            *counts.get_mut(&card_number).expect("🙄") += factor;
+        })
+    });
+    counts.values().sum()
 }
 
 fn parse_input(input: String) -> Vec<Card> {
@@ -29,7 +37,7 @@ fn parse_input(input: String) -> Vec<Card> {
         .lines()
         .map(|line| {
             let (card_info, numbers) = line.split_once(':').expect("🤪");
-            let numbers: Vec<Vec<i32>> = numbers
+            let numbers: Vec<HashSet<i32>> = numbers
                 .trim()
                 .split(" | ")
                 .map(|numbers| {
@@ -40,15 +48,14 @@ fn parse_input(input: String) -> Vec<Card> {
                 })
                 .collect();
             (
-                card_info.to_string(),
-                numbers[0].clone(),
-                numbers[1].clone(),
+                card_info[5..].trim().parse().expect("🙏"),
+                numbers[1].intersection(&numbers[0]).count(),
             )
         })
         .collect()
 }
 
-type Card = (String, Vec<i32>, Vec<i32>);
+type Card = (usize, usize);
 
 #[cfg(test)]
 mod tests {
@@ -64,5 +71,10 @@ mod tests {
     }
 
     #[test]
-    fn test_day04_part_2() {}
+    fn test_day04_part_2() {
+        assert_eq!(
+            total_scratch_cards(&parse_input(read_input("day04.test"))),
+            30
+        );
+    }
 }
