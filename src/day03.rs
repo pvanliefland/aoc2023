@@ -123,13 +123,13 @@ mod tests {
 
     #[test]
     fn test_day03_part_1() {
-        let (numbers, grid) = parse_input(read_input("day03.test"));
+        let (numbers, grid) = parse_input(read_input("test/day03"));
         assert_eq!(sum_adjacent_numbers(&grid, &numbers), 4361);
     }
 
     #[test]
     fn test_day03_part_2() {
-        let (numbers, grid) = parse_input(read_input("day03.test"));
+        let (numbers, grid) = parse_input(read_input("test/day03"));
         assert_eq!(sum_gear_ratios(&grid, &numbers), 467835);
     }
 }

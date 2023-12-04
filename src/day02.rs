@@ -91,13 +91,13 @@ mod tests {
 
     #[test]
     fn test_day02_part_1() {
-        let games = parse_input(read_input("day02.test"));
+        let games = parse_input(read_input("test/day02"));
         assert_eq!(sum_of_possible_games(&games, Draw(12, 13, 14)), 8);
     }
 
     #[test]
     fn test_day02_part_2() {
-        let games = parse_input(read_input("day02.test"));
+        let games = parse_input(read_input("test/day02"));
         assert_eq!(sum_of_minimum_draw_powers(&games), 2286);
     }
 }

@@ -62,7 +62,7 @@ mod tests {
     #[test]
     fn test_day04_part_1() {
         assert_eq!(
-            total_card_points(&parse_input(read_input("day04.test"))),
+            total_card_points(&parse_input(read_input("test/day04"))),
             13
         );
     }
@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn test_day04_part_2() {
         assert_eq!(
-            total_scratch_cards(&parse_input(read_input("day04.test"))),
+            total_scratch_cards(&parse_input(read_input("test/day04"))),
             30
         );
     }
