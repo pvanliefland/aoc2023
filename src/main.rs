@@ -1,6 +1,7 @@
-use aoc2023::read_input;
 use std::env;
 use std::time::{Duration, Instant};
+
+use aoc2023::read_input;
 
 fn main() {
     let days = [
@@ -8,6 +9,7 @@ fn main() {
         aoc2023::day02::run,
         aoc2023::day03::run,
         aoc2023::day04::run,
+        aoc2023::day05::run,
     ];
 
     let range = if let Some(day) = env::args().nth(1) {
