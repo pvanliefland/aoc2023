@@ -3,11 +3,8 @@ use std::ops::Range;
 pub fn run(input: String) {
     let (seeds, maps) = parse_input(input);
 
-    println!(
-        "Part 1: {}",
-        analyze_seeds(seeds, maps).iter().min().expect("😔")
-    );
-    println!("Part 2: {}", "???");
+    println!("Part 1: {}", lowest_location(&seeds, &maps, false));
+    println!("Part 2: {}", lowest_location(&seeds, &maps, true));
 }
 fn parse_input(input: String) -> (Vec<Seed>, Maps) {
     let (seed_part, map_part) = input.split_once("\n\n").expect("🙄");
@@ -35,10 +32,20 @@ fn parse_input(input: String) -> (Vec<Seed>, Maps) {
         .collect();
     (seeds, maps.try_into().expect("😿"))
 }
-fn analyze_seeds(seeds: Vec<Seed>, maps: Maps) -> Vec<usize> {
-    seeds
+fn lowest_location(seeds: &[Seed], maps: &Maps, range_mode: bool) -> usize {
+    let seed_ranges = if range_mode {
+        seeds
+            .chunks(2)
+            .map(|chunk| chunk[0]..(chunk[0] + chunk[1]))
+            .collect::<Vec<_>>()
+    } else {
+        seeds.iter().map(|&seed| seed..seed + 1).collect()
+    };
+
+    seed_ranges
         .iter()
-        .map(|&seed| {
+        .flat_map(|seed_range| seed_range.clone().collect::<Vec<_>>())
+        .map(|seed| {
             maps.iter().fold(seed, |value, map| {
                 if let Some(ranges) = map.iter().find(|ranges| ranges.0.contains(&value)) {
                     ranges.1.start + (value - ranges.0.start)
@@ -47,7 +54,8 @@ fn analyze_seeds(seeds: Vec<Seed>, maps: Maps) -> Vec<usize> {
                 }
             })
         })
-        .collect()
+        .min()
+        .expect("🙄")
 }
 
 type Seed = usize;
@@ -62,10 +70,12 @@ mod tests {
     #[test]
     fn test_day05_part_1() {
         let (seeds, maps) = parse_input(read_input("test/day05"));
-        let analyzed = analyze_seeds(seeds, maps);
-        dbg!(analyzed);
+        assert_eq!(lowest_location(&seeds, &maps, false), 35);
     }
 
     #[test]
-    fn test_day05_part_2() {}
+    fn test_day05_part_2() {
+        let (seeds, maps) = parse_input(read_input("test/day05"));
+        assert_eq!(lowest_location(&seeds, &maps, true), 46);
+    }
 }
