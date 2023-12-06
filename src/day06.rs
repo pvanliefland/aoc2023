@@ -1,25 +1,14 @@
 pub fn run(input: String) {
-    println!(
-        "Part 1: {}",
-        product_of_winning_strategies(parse_input(&input, false))
-    );
-    println!(
-        "Part 2: {}",
-        product_of_winning_strategies(parse_input(&input, true))
-    );
+    println!("Part 1: {}", winning_score(parse_input(&input, false)));
+    println!("Part 2: {}", winning_score(parse_input(&input, true)));
 }
 
-fn product_of_winning_strategies(race_data: Vec<Vec<usize>>) -> usize {
+fn winning_score(race_data: Vec<Vec<usize>>) -> usize {
     (0..race_data[0].len())
         .map(|game| {
-            dbg!(game);
-            let (duration, record) = (race_data[0][game] as f64, race_data[1][game] as f64);
-            let speed_1 =
-                ((-duration + (duration.powf(2.) - 4. * record).sqrt()) / -2. + 1.).floor();
-            let speed_2 =
-                ((-duration - (duration.powf(2.) - 4. * record).sqrt()) / -2. - 1.).ceil();
-
-            (speed_2 - speed_1 + 1.) as usize
+            let (time, record) = (race_data[0][game] as f64, race_data[1][game] as f64);
+            let sd = (time.powf(2.) - 4. * record).sqrt();
+            (((-time - sd) / -2. - 1.).ceil() - ((-time + sd) / -2. + 1.).floor() + 1.) as usize
         })
         .product()
 }
@@ -48,7 +37,7 @@ mod tests {
     #[test]
     fn test_day06_part_1() {
         assert_eq!(
-            product_of_winning_strategies(parse_input(&read_input("test/day06"), false)),
+            winning_score(parse_input(&read_input("test/day06"), false)),
             288
         );
     }
@@ -56,7 +45,7 @@ mod tests {
     #[test]
     fn test_day06_part_2() {
         assert_eq!(
-            product_of_winning_strategies(parse_input(&read_input("test/day06"), true)),
+            winning_score(parse_input(&read_input("test/day06"), true)),
             71503
         );
     }
