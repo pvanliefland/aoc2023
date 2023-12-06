@@ -8,7 +8,23 @@ pub fn run(input: String) {
         product_of_winning_strategies(parse_input(&input, true))
     );
 }
-fn parse_input(input: &str, fix_kerning: bool) -> [Vec<usize>; 2] {
+
+fn product_of_winning_strategies(race_data: Vec<Vec<usize>>) -> usize {
+    (0..race_data[0].len())
+        .map(|game| {
+            dbg!(game);
+            let (duration, record) = (race_data[0][game] as f64, race_data[1][game] as f64);
+            let speed_1 =
+                ((-duration + (duration.powf(2.) - 4. * record).sqrt()) / -2. + 1.).floor();
+            let speed_2 =
+                ((-duration - (duration.powf(2.) - 4. * record).sqrt()) / -2. - 1.).ceil();
+
+            (speed_2 - speed_1 + 1.) as usize
+        })
+        .product()
+}
+
+fn parse_input(input: &str, fix_kerning: bool) -> Vec<Vec<usize>> {
     input
         .lines()
         .map(|line| {
@@ -19,21 +35,9 @@ fn parse_input(input: &str, fix_kerning: bool) -> [Vec<usize>; 2] {
             race_data
                 .split_whitespace()
                 .map(|part| part.parse().expect("🤷"))
-                .collect::<Vec<_>>()
+                .collect()
         })
-        .collect::<Vec<_>>()
-        .try_into()
-        .expect("🙏")
-}
-
-fn product_of_winning_strategies(race_data: [Vec<usize>; 2]) -> usize {
-    (0..race_data[0].len())
-        .map(|game| {
-            (1..race_data[0][game])
-                .filter(|speed| speed * (race_data[0][game] - speed) > race_data[1][game])
-                .count()
-        })
-        .product()
+        .collect()
 }
 
 #[cfg(test)]
