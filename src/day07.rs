@@ -1,16 +1,19 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-const CARDS: &str = "23456789TJQKA";
-
 pub fn run(input: String) {
     let hands = parse_input(&input);
 
-    println!("Part 1: {}", total_winnings(hands));
-    println!("Part 2: {}", 42);
+    println!("Part 1: {}", total_winnings(&hands, false));
+    println!("Part 2: {}", total_winnings(&hands, true));
 }
 
-fn total_winnings(hands: Vec<(String, usize)>) -> usize {
+fn total_winnings(hands: &[(String, usize)], jokers: bool) -> usize {
+    let card_values = if jokers {
+        "J23456789TQKA"
+    } else {
+        "23456789TJQKA"
+    };
     let mut hands_with_scores = hands
         .iter()
         .map(|(hand, bid)| {
@@ -18,7 +21,27 @@ fn total_winnings(hands: Vec<(String, usize)>) -> usize {
             hand.chars().for_each(|char| {
                 *counter.entry(char).or_insert(0) += 1;
             });
-            (hand, bid, score(&counter))
+
+            let score = if jokers && hand.contains('J') {
+                counter
+                    .keys()
+                    .filter(|&&card| card != 'J')
+                    .map(|card| {
+                        let mut counter = HashMap::new();
+                        hand.replace('J', &card.to_string())
+                            .chars()
+                            .for_each(|char| {
+                                *counter.entry(char).or_insert(0) += 1;
+                            });
+                        score(&counter)
+                    })
+                    .max()
+                    .unwrap_or(score(&counter))
+            } else {
+                score(&counter)
+            };
+
+            (hand, bid, score)
         })
         .collect::<Vec<_>>();
 
@@ -27,10 +50,10 @@ fn total_winnings(hands: Vec<(String, usize)>) -> usize {
             for i in 0..6 {
                 let (c1, c2) = (h1.chars().nth(i).expect("!"), h2.chars().nth(i).expect("!"));
                 if c1 != c2 {
-                    return CARDS
+                    return card_values
                         .find(c1)
                         .expect("😐")
-                        .cmp(&CARDS.find(c2).expect("😦"));
+                        .cmp(&card_values.find(c2).expect("😦"));
                 }
             }
             Ordering::Equal
@@ -75,11 +98,17 @@ mod tests {
 
     #[test]
     fn test_day07_part_1() {
-        assert_eq!(total_winnings(parse_input(&read_input("test/day07"))), 6440);
+        assert_eq!(
+            total_winnings(&parse_input(&read_input("test/day07")), false),
+            6440
+        );
     }
 
     #[test]
     fn test_day06_part_2() {
-        todo!()
+        assert_eq!(
+            total_winnings(&parse_input(&read_input("test/day07")), true),
+            5905
+        );
     }
 }
