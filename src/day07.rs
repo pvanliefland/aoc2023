@@ -10,32 +10,19 @@ pub fn run(input: String) {
     println!("Part 2: {}", 42);
 }
 
-fn total_winnings(hands: Vec<(String, usize, usize)>) -> usize {
-    hands
+fn total_winnings(hands: Vec<(String, usize)>) -> usize {
+    let mut hands_with_scores = hands
         .iter()
-        .enumerate()
-        .map(|(rank, hand)| (rank + 1) * hand.2)
-        .sum()
-}
-
-fn parse_input(input: &str) -> Vec<(String, usize, usize)> {
-    let mut hands = input
-        .lines()
-        .map(|line| {
-            let mut hand = HashMap::new();
-            let (card_string, bid) = line.split_once(' ').expect("😭");
-            card_string.chars().for_each(|char| {
-                *hand.entry(char).or_insert(0) += 1;
+        .map(|(hand, bid)| {
+            let mut counter = HashMap::new();
+            hand.chars().for_each(|char| {
+                *counter.entry(char).or_insert(0) += 1;
             });
-            let rank = score(&hand);
-            (
-                card_string.to_string(),
-                rank,
-                bid.parse::<usize>().expect("🙄"),
-            )
+            (hand, bid, score(&counter))
         })
         .collect::<Vec<_>>();
-    hands.sort_by(|(h1, s1, _), (h2, s2, _)| {
+
+    hands_with_scores.sort_by(|(h1, _, s1), (h2, _, s2)| {
         if s1 == s2 {
             for i in 0..6 {
                 let (c1, c2) = (h1.chars().nth(i).expect("!"), h2.chars().nth(i).expect("!"));
@@ -51,29 +38,34 @@ fn parse_input(input: &str) -> Vec<(String, usize, usize)> {
             s1.cmp(s2)
         }
     });
-    hands
+
+    hands_with_scores
+        .iter()
+        .enumerate()
+        .map(|(rank, (_, &bid, _))| (rank + 1) * bid)
+        .sum()
 }
 
 fn score(hand: &HashMap<char, usize>) -> usize {
-    match hand.len() {
-        1 => 7, // full house,
-        2 => {
-            match hand.values().max().expect("🤭") {
-                4 => 6, // 4 of a kind
-                3 => 5, // full house
-                _ => panic!("🤕"),
-            }
-        }
-        3 => {
-            match hand.values().max().expect("🤭") {
-                3 => 4, // 3 of a kind
-                2 => 3, // 2 pairs
-                _ => panic!("🤕"),
-            }
-        }
-        4 => 2,
+    match (hand.len(), hand.values().max().expect("🤭")) {
+        (1, _) => 7, // full house,
+        (2, 4) => 6, // 4 of a kind
+        (2, 3) => 5, // full house
+        (3, 3) => 4, // 3 of a kind
+        (3, 2) => 3, // 2 pairs
+        (4, _) => 2, // 1 pair
         _ => 1,
     }
+}
+
+fn parse_input(input: &str) -> Vec<(String, usize)> {
+    input
+        .lines()
+        .map(|line| {
+            let (card_string, bid) = line.split_once(' ').expect("😭");
+            (card_string.to_string(), bid.parse::<usize>().expect("🙄"))
+        })
+        .collect::<Vec<_>>()
 }
 
 #[cfg(test)]
@@ -83,13 +75,11 @@ mod tests {
 
     #[test]
     fn test_day07_part_1() {
-        let hands = parse_input(&read_input("test/day07"));
-        dbg!(&hands);
-        assert_eq!(total_winnings(hands), 6440);
+        assert_eq!(total_winnings(parse_input(&read_input("test/day07"))), 6440);
     }
 
     #[test]
     fn test_day06_part_2() {
-        assert_eq!(42, 43);
+        todo!()
     }
 }
