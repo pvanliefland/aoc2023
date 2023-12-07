@@ -8,11 +8,7 @@ pub fn run(input: String) {
     println!("Part 2: {}", lowest_location(&seeds, &maps, true));
 }
 
-fn lowest_location(
-    seeds: &[isize],
-    maps: &Vec<Vec<(Range<isize>, isize)>>,
-    range_mode: bool,
-) -> isize {
+fn lowest_location(seeds: &[isize], maps: &[Vec<Map>], range_mode: bool) -> isize {
     let seed_ranges = if range_mode {
         seeds
             .chunks(2)
@@ -22,92 +18,44 @@ fn lowest_location(
         seeds.iter().map(|&seed| seed..seed + 1).collect()
     };
 
-    // dbg!(maps);
-
     let mut computed_maps: HashMap<_, _> =
         seed_ranges.iter().map(|range| (range.clone(), 0)).collect();
     for (_, level) in maps.iter().enumerate() {
-        /*println!();
-        match i {
-            0 => println!("seed-to-soil"),
-            1 => println!("soil-to-fertilizer"),
-            2 => println!("fertilizer-to-water"),
-            3 => println!("water-to-light"),
-            4 => println!("light-to-temperature"),
-            5 => println!("temperature-to-humidity"),
-            6 => println!("humidity-to-location"),
-            _ => panic!("🤷"),
-        }*/
-
-        for (range, delta) in computed_maps.clone() {
-            let mapped_range = (range.start + delta)..range.end + delta;
-            if let Some((new_range, new_delta)) = level.iter().find(|(new_range, _)| {
-                new_range.contains(&mapped_range.start)
-                    || new_range.contains(&(mapped_range.end - 1))
+        for (r1, d1) in computed_maps.clone() {
+            if let Some((r2, d2)) = level.iter().find(|(range, _)| {
+                range.contains(&(r1.start + d1)) || range.contains(&(r1.end + d1 - 1))
             }) {
                 match (
-                    new_range.contains(&mapped_range.start),
-                    new_range.contains(&(mapped_range.end - 1)),
+                    r2.contains(&(r1.start + d1)),
+                    r2.contains(&(r1.end + d1 - 1)),
                 ) {
                     (true, true) => {
-                        /*println!(
-                            "Range {:?}, mapped to {:?}, is fully contained within {:?}",
-                            range, mapped_range, new_range
-                        );*/
-                        *computed_maps.get_mut(&range).expect("😅") += new_delta;
+                        *computed_maps.get_mut(&r1).expect("😅") += d2;
                     }
                     (true, false) => {
-                        /*println!(
-                            "The start of range {:?}, mapped to {:?}, is contained within {:?}, but not the end",
-                            range, mapped_range, new_range
-                        );*/
-                        let r1 = range.start..(new_range.end - delta);
-                        let r2 = (new_range.end - delta)..range.end;
-                        /*println!(
-                            "Splitting original range {:?} into new range: {:?} and {:?}",
-                            range, r1, r2
-                        );*/
-
-                        computed_maps.remove(&range).expect("☢️");
-                        computed_maps.insert(r1, delta + new_delta);
-                        computed_maps.insert(r2, delta);
+                        computed_maps.remove(&r1).expect("☢️");
+                        computed_maps.insert(r1.start..(r2.end - d1), d1 + d2);
+                        computed_maps.insert((r2.end - d1)..r1.end, d1);
                     }
                     (false, true) => {
-                        /*println!(
-                            "The end of range {:?} mapped to {:?}, is contained within {:?}, but not the start",
-                            range, mapped_range, new_range
-                        );*/
-                        let r1 = range.start..(new_range.start - delta);
-                        let r2 = (new_range.start - delta)..range.end;
-                        /*println!(
-                            "Splitting original range {:?} to new range: {:?} and {:?}",
-                            range, r1, r2
-                        );*/
-
-                        computed_maps.remove(&range).expect("☢️");
-                        computed_maps.insert(r1, delta);
-                        computed_maps.insert(r2, delta + new_delta);
+                        computed_maps.remove(&r1).expect("☢️");
+                        computed_maps.insert(r1.start..(r2.start - d1), d1);
+                        computed_maps.insert((r2.start - d1)..r1.end, d1 + d2);
                     }
                     _ => panic!("😭"),
                 }
-            } else {
-                /*println!(
-                    "No mapping range for {:?}, mapped to {:?}, will be mapped as is",
-                    range, mapped_range
-                );*/
-            };
+            }
         }
     }
 
-    let mut best = computed_maps
+    computed_maps
         .iter()
-        .map(|(range, delta)| (range, delta, range.start + delta))
-        .collect::<Vec<_>>();
-    best.sort_by_key(|&(_, _, score)| score);
-    best.first().expect("🙄").2
+        .map(|(range, delta)| range.start + delta)
+        .min()
+        .expect("☢️")
 }
 
-fn parse_input(input: String) -> (Vec<isize>, Vec<Vec<(Range<isize>, isize)>>) {
+fn parse_input(input: String) -> (Vec<isize>, Vec<Vec<Map>>) {
     let (seed_part, map_part) = input.split_once("\n\n").expect("🙄");
     let seeds: Vec<isize> = seed_part[7..]
         .split_whitespace()
@@ -133,6 +81,8 @@ fn parse_input(input: String) -> (Vec<isize>, Vec<Vec<(Range<isize>, isize)>>) {
         .collect();
     (seeds, maps)
 }
+
+type Map = (Range<isize>, isize);
 
 #[cfg(test)]
 mod tests {
