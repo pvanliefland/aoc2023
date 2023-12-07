@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub fn run(input: String) {
     let hands = parse_input(&input);
@@ -17,28 +17,16 @@ fn total_winnings(hands: &[(String, usize)], jokers: bool) -> usize {
     let mut hands_with_scores = hands
         .iter()
         .map(|(hand, bid)| {
-            let mut counter = HashMap::new();
-            hand.chars().for_each(|char| {
-                *counter.entry(char).or_insert(0) += 1;
-            });
-
             let score = if jokers && hand.contains('J') {
-                counter
-                    .keys()
+                hand.chars()
+                    .collect::<HashSet<_>>()
+                    .iter()
                     .filter(|&&card| card != 'J')
-                    .map(|card| {
-                        let mut counter = HashMap::new();
-                        hand.replace('J', &card.to_string())
-                            .chars()
-                            .for_each(|char| {
-                                *counter.entry(char).or_insert(0) += 1;
-                            });
-                        score(&counter)
-                    })
+                    .map(|alt_card| score(&hand.replace('J', &alt_card.to_string())))
                     .max()
-                    .unwrap_or(score(&counter))
+                    .unwrap_or(score(hand))
             } else {
-                score(&counter)
+                score(hand)
             };
 
             (hand, bid, score)
@@ -47,16 +35,11 @@ fn total_winnings(hands: &[(String, usize)], jokers: bool) -> usize {
 
     hands_with_scores.sort_by(|(h1, _, s1), (h2, _, s2)| {
         if s1 == s2 {
-            for i in 0..6 {
-                let (c1, c2) = (h1.chars().nth(i).expect("!"), h2.chars().nth(i).expect("!"));
-                if c1 != c2 {
-                    return card_values
-                        .find(c1)
-                        .expect("😐")
-                        .cmp(&card_values.find(c2).expect("😦"));
-                }
-            }
-            Ordering::Equal
+            h1.chars()
+                .zip(h2.chars())
+                .map(|(c1, c2)| (card_values.find(c1).unwrap(), card_values.find(c2).unwrap()))
+                .find_map(|(c1, c2)| if c1 != c2 { Some(c1.cmp(&c2)) } else { None })
+                .unwrap_or(Ordering::Equal)
         } else {
             s1.cmp(s2)
         }
@@ -65,12 +48,15 @@ fn total_winnings(hands: &[(String, usize)], jokers: bool) -> usize {
     hands_with_scores
         .iter()
         .enumerate()
-        .map(|(rank, (_, &bid, _))| (rank + 1) * bid)
-        .sum()
+        .fold(0, |acc, (i, (_, &bid, _))| acc + (i + 1) * bid)
 }
 
-fn score(hand: &HashMap<char, usize>) -> usize {
-    match (hand.len(), hand.values().max().expect("🤭")) {
+fn score(hand: &str) -> usize {
+    let mut counter = HashMap::new();
+    hand.chars().for_each(|char| {
+        *counter.entry(char).or_insert(0) += 1;
+    });
+    match (counter.len(), counter.values().max().expect("🤭")) {
         (1, _) => 7, // full house,
         (2, 4) => 6, // 4 of a kind
         (2, 3) => 5, // full house
