@@ -57,7 +57,7 @@ fn score(hand: &str) -> usize {
         *counter.entry(char).or_insert(0) += 1;
     });
     match (counter.len(), counter.values().max().expect("🤭")) {
-        (1, _) => 7, // full house,
+        (1, _) => 7, // 5 of a kind
         (2, 4) => 6, // 4 of a kind
         (2, 3) => 5, // full house
         (3, 3) => 4, // 3 of a kind
