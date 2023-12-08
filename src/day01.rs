@@ -37,7 +37,7 @@ mod tests {
     #[test]
     fn test_day01_part_1() {
         assert_eq!(
-            sum_calibration_values(read_input("test/day01.part1"), false),
+            sum_calibration_values(read_input("test/day01.1"), false),
             142
         );
     }
@@ -45,7 +45,7 @@ mod tests {
     #[test]
     fn test_day01_part_2() {
         assert_eq!(
-            sum_calibration_values(read_input("test/day01.part2"), true),
+            sum_calibration_values(read_input("test/day01.2"), true),
             281
         );
     }
