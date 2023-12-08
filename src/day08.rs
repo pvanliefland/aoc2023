@@ -1,35 +1,65 @@
 use std::collections::HashMap;
 
 pub fn run(input: String) {
-    println!("Part 1: {}", count_steps(&input));
-    println!("Part 2: {}", todo!());
+    let (directions, map) = parse_input(input);
+
+    println!("Part 1: {}", count_steps("AAA", "ZZZ", &directions, &map));
+    println!("Part 2: {}", count_steps_for_ghosts(&directions, &map));
 }
 
-fn count_steps(input: &str) -> usize {
-    let directions = input.lines().next().expect("☢️").chars().cycle();
-    let nodes = input
-        .lines()
-        .skip(2)
-        .map(|line| (&line[0..3], (&line[7..10], &line[12..15])))
-        .collect::<HashMap<_, _>>();
-
-    let mut current_node = "AAA";
+fn count_steps(start: &str, ending: &str, directions: &[char], map: &Map) -> usize {
+    let mut current = map.get_key_value(start).expect("😅");
     directions
+        .iter()
+        .cycle()
         .enumerate()
-        .find_map(|(step, direction)| {
-            let directions = nodes.get(current_node).expect("🤭");
-            current_node = match direction {
-                'L' => directions.0,
-                'R' => directions.1,
-                _ => panic!("🤕"),
-            };
-            if current_node == "ZZZ" {
-                Some(step + 1)
-            } else {
-                None
-            }
+        .find(|(_, direction)| {
+            current = map
+                .get_key_value(match direction {
+                    'L' => &current.1 .0,
+                    'R' => &current.1 .1,
+                    _ => panic!("🤕"),
+                })
+                .expect("🤯");
+            current.0.ends_with(ending)
         })
-        .unwrap()
+        .expect("☢️")
+        .0
+        + 1
+}
+
+fn count_steps_for_ghosts(directions: &[char], map: &Map) -> usize {
+    map.iter()
+        .filter(|(node, _)| node.ends_with('A'))
+        .map(|(node, _)| count_steps(node, "Z", directions, map))
+        .reduce(|a, b| (a * b) / gcd(a, b))
+        .expect("😅")
+}
+
+fn gcd(a: usize, b: usize) -> usize {
+    if b == 0 {
+        a
+    } else {
+        gcd(b, a.rem_euclid(b))
+    }
+}
+
+type Map = HashMap<String, (String, String)>;
+
+fn parse_input(input: String) -> (Vec<char>, HashMap<String, (String, String)>) {
+    (
+        input.lines().next().expect("☢️").chars().collect::<Vec<_>>(),
+        input
+            .lines()
+            .skip(2)
+            .map(|line| {
+                (
+                    line[0..3].to_string(),
+                    (line[7..10].to_string(), line[12..15].to_string()),
+                )
+            })
+            .collect::<HashMap<_, _>>(),
+    )
 }
 
 #[cfg(test)]
@@ -38,13 +68,19 @@ mod tests {
     use crate::read_input;
 
     #[test]
-    fn test_day08_part_1() {
-        assert_eq!(count_steps(&read_input("test/day08.1a")), 2);
-        assert_eq!(count_steps(&read_input("test/day08.1b")), 6);
+    fn test_day08_part_1a() {
+        let (directions, map) = parse_input(read_input("test/day08.1a"));
+        assert_eq!(count_steps("AAA", "ZZZ", &directions, &map), 2);
+    }
+    #[test]
+    fn test_day08_part_1b() {
+        let (directions, map) = parse_input(read_input("test/day08.1b"));
+        assert_eq!(count_steps("AAA", "ZZZ", &directions, &map), 6);
     }
 
     #[test]
     fn test_day08_part_2() {
-        todo!()
+        let (directions, map) = parse_input(read_input("test/day08.2"));
+        assert_eq!(count_steps_for_ghosts(&directions, &map), 6);
     }
 }
