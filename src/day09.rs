@@ -1,13 +1,13 @@
 pub fn run(input: String) {
     let sequences = parse_input(input);
 
-    println!("Part 1: {}", sum_of_predicted_values(sequences));
-    println!("Part 2: {}", 42);
+    println!("Part 1: {}", sum_of_predicted_values(&sequences, false));
+    println!("Part 2: {}", sum_of_predicted_values(&sequences, true));
 }
 
-fn sum_of_predicted_values(sequences: Vec<Vec<isize>>) -> isize {
+fn sum_of_predicted_values(sequences: &[Vec<isize>], rev: bool) -> isize {
     sequences
-        .into_iter()
+        .iter()
         .map(|sequence| {
             let mut rows = vec![sequence.clone()];
             let mut index = 0;
@@ -25,10 +25,16 @@ fn sum_of_predicted_values(sequences: Vec<Vec<isize>>) -> isize {
             rows.iter()
                 .rev()
                 .map(|row| {
-                    let last = *row.last().unwrap();
+                    let last = *(if rev { row.first() } else { row.last() }).expect("️️☢️");
                     (last, if last == 0 { Some(0) } else { None })
                 })
-                .reduce(|acc, e| (e.0, Some(e.0 + acc.1.unwrap())))
+                .reduce(|acc, e| {
+                    if rev {
+                        (e.0, Some(e.0 - acc.1.unwrap()))
+                    } else {
+                        (e.0, Some(e.0 + acc.1.unwrap()))
+                    }
+                })
                 .unwrap()
                 .1
                 .unwrap()
@@ -51,12 +57,15 @@ mod tests {
     #[test]
     fn test_day09_part1() {
         assert_eq!(
-            sum_of_predicted_values(parse_input(read_input("test/day09"))),
+            sum_of_predicted_values(&parse_input(read_input("test/day09")), false),
             114
         );
     }
     #[test]
     fn test_day09_part2() {
-        todo!()
+        assert_eq!(
+            sum_of_predicted_values(&parse_input(read_input("test/day09")), true),
+            2
+        );
     }
 }
