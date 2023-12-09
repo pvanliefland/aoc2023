@@ -22,12 +22,16 @@ fn sum_of_predicted_values(sequences: Vec<Vec<isize>>) -> isize {
                     break;
                 }
             }
-            let next_value = rows
-                .iter()
-                .map(|row| *row.last().unwrap())
-                .reduce(|acc, e| acc + e)
-                .unwrap();
-            next_value
+            rows.iter()
+                .rev()
+                .map(|row| {
+                    let last = *row.last().unwrap();
+                    (last, if last == 0 { Some(0) } else { None })
+                })
+                .reduce(|acc, e| (e.0, Some(e.0 + acc.1.unwrap())))
+                .unwrap()
+                .1
+                .unwrap()
         })
         .sum()
 }
