@@ -1,6 +1,5 @@
 pub fn run(input: String) {
     let sequences = parse_input(input);
-
     println!("Part 1: {}", sum_of_predicted_values(&sequences, false));
     println!("Part 2: {}", sum_of_predicted_values(&sequences, true));
 }
@@ -10,34 +9,18 @@ fn sum_of_predicted_values(sequences: &[Vec<isize>], rev: bool) -> isize {
         .iter()
         .map(|sequence| {
             let mut rows = vec![sequence.clone()];
-            let mut index = 0;
-            loop {
-                let next = rows[index]
-                    .windows(2)
-                    .map(|w| w[1] - w[0])
-                    .collect::<Vec<_>>();
-                rows.push(next.clone());
-                index += 1;
-                if next.iter().all(|&value| value == 0) {
-                    break;
-                }
+            while !rows[rows.len() - 1].iter().all(|&value| value == 0) {
+                rows.push(
+                    rows[rows.len() - 1]
+                        .windows(2)
+                        .map(|w| w[1] - w[0])
+                        .collect::<Vec<_>>(),
+                );
             }
             rows.iter()
                 .rev()
-                .map(|row| {
-                    let last = *(if rev { row.first() } else { row.last() }).expect("️️☢️");
-                    (last, if last == 0 { Some(0) } else { None })
-                })
-                .reduce(|acc, e| {
-                    if rev {
-                        (e.0, Some(e.0 - acc.1.unwrap()))
-                    } else {
-                        (e.0, Some(e.0 + acc.1.unwrap()))
-                    }
-                })
-                .unwrap()
-                .1
-                .unwrap()
+                .map(|row| *(if rev { row.first() } else { row.last() }).expect("️️☢️"))
+                .fold(0, |acc, e| if rev { e - acc } else { e + acc })
         })
         .sum()
 }
@@ -61,6 +44,7 @@ mod tests {
             114
         );
     }
+
     #[test]
     fn test_day09_part2() {
         assert_eq!(
