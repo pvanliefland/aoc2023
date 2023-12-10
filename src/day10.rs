@@ -1,18 +1,10 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub fn run(input: String) {
-    let navigator = parse_input(input, '-');
+    let mut navigator = parse_input(input, '-');
 
-    println!("Part 1: {}", longest_segment(navigator));
+    println!("Part 1: {}", navigator.longest_segment());
     println!("Part 2: {}", 42);
-}
-
-fn longest_segment(mut navigator: Navigator) -> usize {
-    loop {
-        if let Err(steps) = navigator.step() {
-            break steps;
-        }
-    }
 }
 
 fn parse_input(input: String, start_tile: char) -> Navigator {
@@ -45,9 +37,12 @@ struct Navigator {
     current: [Position; 2],
     prev: [Position; 2],
     steps: usize,
+    loop_coordinates: HashSet<Position>,
+    max_xy: Position,
 }
 impl Navigator {
     pub fn new(map: HashMap<Position, char>, start: Position, start_tile: char) -> Self {
+        let max_xy = *(map.keys().max().expect("☢️"));
         Self {
             map,
             start,
@@ -55,6 +50,8 @@ impl Navigator {
             current: [start, start],
             prev: [start, start],
             steps: 0,
+            loop_coordinates: HashSet::from([start]),
+            max_xy,
         }
     }
 
@@ -85,12 +82,47 @@ impl Navigator {
                 .expect("🙄");
             self.prev[i] = current;
             self.current[i] = (current.0 + dx, current.1 + dy);
+            self.loop_coordinates.insert(self.current[i]);
         });
         if self.current[0] == self.current[1] {
             Err(self.steps)
         } else {
             Ok(())
         }
+    }
+
+    fn longest_segment(&mut self) -> usize {
+        loop {
+            if let Err(steps) = self.step() {
+                break steps;
+            }
+        }
+    }
+
+    fn enclosed(&self) -> usize {
+        let enclosed = self
+            .map
+            .iter()
+            .filter(|(p, _)| !self.loop_coordinates.contains(p))
+            .filter(|(p, _)| {
+                (p.0..self.max_xy.0)
+                    .filter(|&x| {
+                        let ray_pos = (x, p.1);
+                        self.loop_coordinates.contains(&ray_pos)
+                            && self.map.get(&ray_pos).is_some_and(|t| {
+                                ['|', 'F', '7'].contains(t)
+                                    || ray_pos == self.start
+                                        && ['|', 'F', '7'].contains(&self.start_tile)
+                            })
+                    })
+                    .count()
+                    % 2
+                    == 1
+            })
+            .collect::<Vec<_>>();
+        dbg!(&enclosed);
+
+        enclosed.len()
     }
 }
 type Position = (isize, isize);
@@ -102,14 +134,35 @@ mod tests {
 
     #[test]
     fn test_day10_part1() {
-        assert_eq!(
-            longest_segment(parse_input(read_input("test/day10"), 'F')),
-            8
-        );
+        let mut navigator = parse_input(read_input("test/day10.1"), 'F');
+        assert_eq!(navigator.longest_segment(), 8);
     }
 
     #[test]
-    fn test_day10_part2() {
-        todo!()
+    fn test_day10_part21() {
+        let mut navigator = parse_input(read_input("test/day10.2.1"), 'F');
+        navigator.longest_segment();
+        assert_eq!(navigator.enclosed(), 4);
+    }
+
+    #[test]
+    fn test_day10_part22() {
+        let mut navigator = parse_input(read_input("test/day10.2.2"), 'F');
+        navigator.longest_segment();
+        assert_eq!(navigator.enclosed(), 4);
+    }
+
+    #[test]
+    fn test_day10_part23() {
+        let mut navigator = parse_input(read_input("test/day10.2.3"), 'F');
+        navigator.longest_segment();
+        assert_eq!(navigator.enclosed(), 8);
+    }
+
+    #[test]
+    fn test_day10_part24() {
+        let mut navigator = parse_input(read_input("test/day10.2.4"), '7');
+        navigator.longest_segment();
+        assert_eq!(navigator.enclosed(), 10);
     }
 }
