@@ -1,5 +1,6 @@
 pub fn run(input: String) {
     let sequences = parse_input(input);
+
     println!("Part 1: {}", sum_of_predicted_values(&sequences, false));
     println!("Part 2: {}", sum_of_predicted_values(&sequences, true));
 }
