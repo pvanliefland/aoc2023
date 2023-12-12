@@ -1,27 +1,24 @@
+use std::collections::hash_map::Iter;
 use std::collections::HashMap;
 
 pub fn run(input: String) {
     let raw_map = parse_input(input);
 
     let loop_map = compute_loop(raw_map, '-');
-    let steps = max_by(&loop_map, |tile| tile.position_in_loop);
-    println!("Part 1: {}", steps);
+    println!("Part 1: {}", loop_map.max_by(|tile| tile.position_in_loop));
 
     println!("Part 2: {}", 42);
 }
 
-fn compute_loop(
-    map: HashMap<(isize, isize), char>,
-    start_tile: char,
-) -> HashMap<(isize, isize), SmartTile> {
+fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
     let mut smart_map = map
-        .into_iter()
+        .iter()
         .map(|(p, c)| {
             (
-                p,
+                *p,
                 SmartTile {
-                    kind: c,
-                    position_in_loop: if c == 'S' { Some(0) } else { None },
+                    kind: *c,
+                    position_in_loop: if *c == 'S' { Some(0) } else { None },
                 },
             )
         })
@@ -31,8 +28,8 @@ fn compute_loop(
         .find_map(|(p, c)| if c.kind == 'S' { Some(*p) } else { None })
         .expect("☢️");
     let mut steps = 0;
-    let mut current_positions = vec![start, start];
-    let mut previous_positions = vec![start, start];
+    let mut current_positions = [start, start];
+    let mut previous_positions = [start, start];
     loop {
         steps += 1;
         [0usize, 1].iter().for_each(|&i| {
@@ -74,7 +71,7 @@ fn compute_loop(
             break;
         }
     }
-    smart_map
+    Map::new(smart_map)
 }
 
 struct SmartTile {
@@ -86,21 +83,33 @@ struct Map<T> {
     map: HashMap<(isize, isize), T>,
 }
 
-fn max_by<T>(map: &HashMap<(isize, isize), T>, by: fn(&T) -> Option<usize>) -> usize {
-    map.values().filter_map(by).max().expect("😅")
+impl<T> Map<T> {
+    pub fn new(map: HashMap<(isize, isize), T>) -> Self {
+        Self { map }
+    }
+
+    fn max_by(&self, by: fn(&T) -> Option<usize>) -> usize {
+        self.map.values().filter_map(by).max().expect("😅")
+    }
+
+    fn iter(&self) -> Iter<'_, (isize, isize), T> {
+        self.map.iter()
+    }
 }
 
-fn parse_input(input: String) -> HashMap<(isize, isize), char> {
-    input
-        .lines()
-        .enumerate()
-        .flat_map(|(y, l)| {
-            l.chars()
-                .enumerate()
-                .map(|(x, c)| ((x as isize, y as isize), c))
-                .collect::<Vec<_>>()
-        })
-        .collect::<HashMap<_, _>>()
+fn parse_input(input: String) -> Map<char> {
+    Map::new(
+        input
+            .lines()
+            .enumerate()
+            .flat_map(|(y, l)| {
+                l.chars()
+                    .enumerate()
+                    .map(|(x, c)| ((x as isize, y as isize), c))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<HashMap<_, _>>(),
+    )
 }
 
 /*
@@ -139,13 +148,8 @@ mod tests {
 
     #[test]
     fn test_day10_part1() {
-        assert_eq!(
-            max_by(
-                &compute_loop(parse_input(read_input("test/day10.1")), 'F'),
-                |tile| tile.position_in_loop
-            ),
-            8
-        );
+        let loop_map = compute_loop(parse_input(read_input("test/day10.1")), 'F');
+        assert_eq!(loop_map.max_by(|tile| tile.position_in_loop), 8);
     }
 
     /*#[ignore]
