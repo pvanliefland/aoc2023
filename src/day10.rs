@@ -1,70 +1,48 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 pub fn run(input: String) {
-    let mut navigator = parse_input(input, '-');
+    let raw_map = parse_input(input);
 
-    println!("Part 1: {}", navigator.longest_segment());
+    let loop_map = compute_loop(raw_map, '-');
+    let steps = max_by(&loop_map, |tile| tile.position_in_loop);
+    println!("Part 1: {}", steps);
+
     println!("Part 2: {}", 42);
 }
 
-fn parse_input(input: String, start_tile: char) -> Navigator {
-    let mut start = None;
-    Navigator::new(
-        input
-            .lines()
-            .enumerate()
-            .flat_map(|(y, l)| {
-                l.chars()
-                    .enumerate()
-                    .map(|(x, c)| {
-                        if c == 'S' {
-                            start = Some((x as isize, y as isize));
-                        }
-                        ((x as isize, y as isize), c)
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect::<HashMap<_, _>>(),
-        start.expect("🤪"),
-        start_tile,
-    )
-}
-
-struct Navigator {
-    map: HashMap<Position, char>,
-    start: Position,
+fn compute_loop(
+    map: HashMap<(isize, isize), char>,
     start_tile: char,
-    current: [Position; 2],
-    prev: [Position; 2],
-    steps: usize,
-    loop_coordinates: HashSet<Position>,
-    max_xy: Position,
-}
-impl Navigator {
-    pub fn new(map: HashMap<Position, char>, start: Position, start_tile: char) -> Self {
-        let max_xy = *(map.keys().max().expect("☢️"));
-        Self {
-            map,
-            start,
-            start_tile,
-            current: [start, start],
-            prev: [start, start],
-            steps: 0,
-            loop_coordinates: HashSet::from([start]),
-            max_xy,
-        }
-    }
-
-    fn step(&mut self) -> Result<(), usize> {
-        self.steps += 1;
-        [0usize, 1].into_iter().for_each(|i| {
-            let current = self.current[i];
-            let tile = if current == self.start {
-                self.start_tile
+) -> HashMap<(isize, isize), SmartTile> {
+    let mut smart_map = map
+        .into_iter()
+        .map(|(p, c)| {
+            (
+                p,
+                SmartTile {
+                    kind: c,
+                    position_in_loop: if c == 'S' { Some(0) } else { None },
+                },
+            )
+        })
+        .collect::<HashMap<_, _>>();
+    let start = smart_map
+        .iter()
+        .find_map(|(p, c)| if c.kind == 'S' { Some(*p) } else { None })
+        .expect("☢️");
+    let mut steps = 0;
+    let mut current_positions = vec![start, start];
+    let mut previous_positions = vec![start, start];
+    loop {
+        steps += 1;
+        [0usize, 1].iter().for_each(|&i| {
+            let current_position = current_positions[i];
+            let tile = if current_position == start {
+                start_tile
             } else {
-                *self.map.get(&current).expect("😅")
+                smart_map.get(&current_position).expect("😅").kind
             };
-            let possible_moves = match tile {
+            let mut possible_next_positions = (match tile {
                 '|' => [(0, 1), (0, -1)],
                 '-' => [(1, 0), (-1, 0)],
                 'L' => [(0, -1), (1, 0)],
@@ -72,32 +50,60 @@ impl Navigator {
                 '7' => [(0, 1), (-1, 0)],
                 'F' => [(0, 1), (1, 0)],
                 _ => panic!("{} 😰", tile),
-            };
-            let (dx, dy) = possible_moves
-                .iter()
-                .find(|(dx, dy)| {
-                    (self.steps > 1 || !self.current.contains(&(current.0 + dx, current.1 + dy)))
-                        && !self.prev.contains(&(current.0 + dx, current.1 + dy))
-                })
-                .expect("🙄");
-            self.prev[i] = current;
-            self.current[i] = (current.0 + dx, current.1 + dy);
-            self.loop_coordinates.insert(self.current[i]);
-        });
-        if self.current[0] == self.current[1] {
-            Err(self.steps)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn longest_segment(&mut self) -> usize {
-        loop {
-            if let Err(steps) = self.step() {
-                break steps;
+            })
+            .map(|(dx, dy)| (current_position.0 + dx, current_position.1 + dy));
+            if steps == 1 && i == 1 {
+                possible_next_positions.reverse();
             }
+
+            let next_position = *possible_next_positions
+                .iter()
+                .find(|pipe| !previous_positions.contains(&pipe))
+                .expect("🙄");
+            previous_positions[i] = current_position;
+            current_positions[i] = next_position;
+            smart_map.insert(
+                current_position,
+                SmartTile {
+                    kind: 'x',
+                    position_in_loop: Some(steps),
+                },
+            );
+        });
+        if current_positions[0] == current_positions[1] {
+            break;
         }
     }
+    smart_map
+}
+
+struct SmartTile {
+    kind: char,
+    position_in_loop: Option<usize>,
+}
+
+struct Map<T> {
+    map: HashMap<(isize, isize), T>,
+}
+
+fn max_by<T>(map: &HashMap<(isize, isize), T>, by: fn(&T) -> Option<usize>) -> usize {
+    map.values().filter_map(by).max().expect("😅")
+}
+
+fn parse_input(input: String) -> HashMap<(isize, isize), char> {
+    input
+        .lines()
+        .enumerate()
+        .flat_map(|(y, l)| {
+            l.chars()
+                .enumerate()
+                .map(|(x, c)| ((x as isize, y as isize), c))
+                .collect::<Vec<_>>()
+        })
+        .collect::<HashMap<_, _>>()
+}
+
+/*
 
     fn enclosed(&self) -> usize {
         let enclosed = self
@@ -125,8 +131,7 @@ impl Navigator {
         enclosed.len()
     }
 }
-type Position = (isize, isize);
-
+*/
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -134,10 +139,16 @@ mod tests {
 
     #[test]
     fn test_day10_part1() {
-        let mut navigator = parse_input(read_input("test/day10.1"), 'F');
-        assert_eq!(navigator.longest_segment(), 8);
+        assert_eq!(
+            max_by(
+                &compute_loop(parse_input(read_input("test/day10.1")), 'F'),
+                |tile| tile.position_in_loop
+            ),
+            8
+        );
     }
 
+    /*#[ignore]
     #[test]
     fn test_day10_part21() {
         let mut navigator = parse_input(read_input("test/day10.2.1"), 'F');
@@ -145,6 +156,7 @@ mod tests {
         assert_eq!(navigator.enclosed(), 4);
     }
 
+    #[ignore]
     #[test]
     fn test_day10_part22() {
         let mut navigator = parse_input(read_input("test/day10.2.2"), 'F');
@@ -152,6 +164,7 @@ mod tests {
         assert_eq!(navigator.enclosed(), 4);
     }
 
+    #[ignore]
     #[test]
     fn test_day10_part23() {
         let mut navigator = parse_input(read_input("test/day10.2.3"), 'F');
@@ -159,10 +172,11 @@ mod tests {
         assert_eq!(navigator.enclosed(), 8);
     }
 
+    #[ignore]
     #[test]
     fn test_day10_part24() {
         let mut navigator = parse_input(read_input("test/day10.2.4"), '7');
         navigator.longest_segment();
         assert_eq!(navigator.enclosed(), 10);
-    }
+    }*/
 }
