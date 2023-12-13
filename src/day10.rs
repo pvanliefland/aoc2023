@@ -8,18 +8,19 @@ pub fn run(input: String) {
     let loop_map = compute_loop(raw_map, '-');
     println!("Part 1: {}", loop_map.max_by(|tile| tile.position_in_loop));
 
+    let enclosed_map = enclosed_loop(loop_map, '-');
     println!("Part 2: {}", 42);
 }
 
 fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
     let mut smart_map = map
         .iter()
-        .map(|(p, c)| {
+        .map(|(p, t)| {
             (
                 *p,
                 SmartTile {
-                    kind: *c,
-                    position_in_loop: if *c == 'S' { Some(0) } else { None },
+                    kind: *t,
+                    position_in_loop: if *t == 'S' { Some(0) } else { None },
                 },
             )
         })
@@ -71,6 +72,49 @@ fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
     Map::new(smart_map)
 }
 
+fn enclosed_loop(map: Map<SmartTile>, start_tile: char) -> Map<SmarterTile> {
+    let mut smarter_map = map
+        .iter()
+        .map(|(p, t)| {
+            (
+                *p,
+                SmarterTile {
+                    kind: t.kind,
+                    position_in_loop: t.position_in_loop,
+                    enclosed: false,
+                },
+            )
+        })
+        .collect::<HashMap<_, _>>();
+    let start = smarter_map
+        .iter()
+        .find_map(|(p, c)| if c.kind == 'S' { Some(*p) } else { None })
+        .expect("☢️");
+
+    let enclosed = smarter_map
+        .iter()
+        .filter(|(_, t)| t.position_in_loop.is_none())
+        .filter(|(p, _)| {
+            (p.0..map.max_xy.0)
+                .filter(|&x| {
+                    let ray_pos = (x, p.1);
+                    let tile_at_ray_pos = map.map.get(&ray_pos).expect("☢️");
+                    tile_at_ray_pos.position_in_loop.is_some_and(|_| {
+                        ['|', 'F', '7'].contains(&tile_at_ray_pos.kind)
+                            || ray_pos == start && ['|', 'F', '7'].contains(&tile_at_ray_pos.kind)
+                    })
+                })
+                .count()
+                % 2
+                == 1
+        })
+        .collect::<Vec<_>>();
+    dbg!(&&enclosed);
+
+    Map::new(smarter_map)
+}
+
+#[derive(Debug)]
 struct SmartTile {
     kind: char,
     position_in_loop: Option<usize>,
@@ -79,7 +123,25 @@ struct SmartTile {
 impl Display for SmartTile {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.position_in_loop.is_some() {
-            write!(f, "\x1b[93m{}\x1b[0m", self.position_in_loop.unwrap())
+            write!(f, "\x1b[93m{}\x1b[0m", self.kind)
+        } else {
+            write!(f, "{}", self.kind)
+        }
+    }
+}
+#[derive(Debug)]
+struct SmarterTile {
+    kind: char,
+    position_in_loop: Option<usize>,
+    enclosed: bool,
+}
+
+impl Display for SmarterTile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.position_in_loop.is_some() {
+            write!(f, "\x1b[93m{}\x1b[0m", self.kind)
+        } else if self.enclosed {
+            write!(f, "\x1b[97m{}\x1b[0m", self.position_in_loop.unwrap())
         } else {
             write!(f, "{}", self.kind)
         }
@@ -97,8 +159,12 @@ impl<T: Display> Map<T> {
         Self { map, max_xy }
     }
 
-    fn max_by(&self, by: fn(&T) -> Option<usize>) -> usize {
-        self.map.values().filter_map(by).max().expect("😅")
+    fn max_by(&self, by_fn: fn(&T) -> Option<usize>) -> usize {
+        self.map.values().filter_map(by_fn).max().expect("😅")
+    }
+
+    fn count_where(&self, where_fn: fn(&&T) -> bool) -> usize {
+        self.map.values().filter(where_fn).count()
     }
 
     fn iter(&self) -> Iter<'_, (isize, isize), T> {
@@ -136,35 +202,6 @@ fn parse_input(input: String) -> Map<char> {
     )
 }
 
-/*
-
-    fn enclosed(&self) -> usize {
-        let enclosed = self
-            .map
-            .iter()
-            .filter(|(p, _)| !self.loop_coordinates.contains(p))
-            .filter(|(p, _)| {
-                (p.0..self.max_xy.0)
-                    .filter(|&x| {
-                        let ray_pos = (x, p.1);
-                        self.loop_coordinates.contains(&ray_pos)
-                            && self.map.get(&ray_pos).is_some_and(|t| {
-                                ['|', 'F', '7'].contains(t)
-                                    || ray_pos == self.start
-                                        && ['|', 'F', '7'].contains(&self.start_tile)
-                            })
-                    })
-                    .count()
-                    % 2
-                    == 1
-            })
-            .collect::<Vec<_>>();
-        dbg!(&enclosed);
-
-        enclosed.len()
-    }
-}
-*/
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,15 +216,17 @@ mod tests {
         assert_eq!(loop_map.max_by(|tile| tile.position_in_loop), 8);
     }
 
-    /*#[ignore]
     #[test]
     fn test_day10_part21() {
-        let mut navigator = parse_input(read_input("test/day10.2.1"), 'F');
-        navigator.longest_segment();
-        assert_eq!(navigator.enclosed(), 4);
+        let raw_map = parse_input(read_input("test/day10.1"));
+        print!("{}", raw_map);
+        let loop_map = compute_loop(raw_map, 'F');
+        print!("{}", loop_map);
+        let enclosed_map = enclosed_loop(loop_map, 'F');
+        assert_eq!(enclosed_map.count_where(|t| t.enclosed), 4);
     }
 
-    #[ignore]
+    /*#[ignore]
     #[test]
     fn test_day10_part22() {
         let mut navigator = parse_input(read_input("test/day10.2.2"), 'F');
