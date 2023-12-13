@@ -1,5 +1,6 @@
 use std::collections::hash_map::Iter;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 pub fn run(input: String) {
     let raw_map = parse_input(input);
@@ -52,20 +53,16 @@ fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
             if steps == 1 && i == 1 {
                 possible_next_positions.reverse();
             }
-
             let next_position = *possible_next_positions
                 .iter()
-                .find(|pipe| !previous_positions.contains(&pipe))
+                .find(|pipe| !previous_positions.contains(pipe))
                 .expect("🙄");
             previous_positions[i] = current_position;
             current_positions[i] = next_position;
-            smart_map.insert(
-                current_position,
-                SmartTile {
-                    kind: 'x',
-                    position_in_loop: Some(steps),
-                },
-            );
+            smart_map
+                .get_mut(&next_position)
+                .expect("😭")
+                .position_in_loop = Some(steps);
         });
         if current_positions[0] == current_positions[1] {
             break;
@@ -79,13 +76,25 @@ struct SmartTile {
     position_in_loop: Option<usize>,
 }
 
-struct Map<T> {
-    map: HashMap<(isize, isize), T>,
+impl Display for SmartTile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.position_in_loop.is_some() {
+            write!(f, "\x1b[93m{}\x1b[0m", self.position_in_loop.unwrap())
+        } else {
+            write!(f, "{}", self.kind)
+        }
+    }
 }
 
-impl<T> Map<T> {
+struct Map<T: Display> {
+    map: HashMap<(isize, isize), T>,
+    max_xy: (isize, isize),
+}
+
+impl<T: Display> Map<T> {
     pub fn new(map: HashMap<(isize, isize), T>) -> Self {
-        Self { map }
+        let max_xy = *(map.keys().max().expect("😅"));
+        Self { map, max_xy }
     }
 
     fn max_by(&self, by: fn(&T) -> Option<usize>) -> usize {
@@ -94,6 +103,21 @@ impl<T> Map<T> {
 
     fn iter(&self) -> Iter<'_, (isize, isize), T> {
         self.map.iter()
+    }
+}
+
+impl<T: Display> Display for Map<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut output = String::new();
+        for y in 0..=self.max_xy.1 {
+            for x in 0..=self.max_xy.0 {
+                let tile = self.map.get(&(x, y)).expect("😅");
+                output.push_str(&format!("{}", tile));
+            }
+            output.push('\n');
+        }
+        output.push('\n');
+        f.write_str(&output)
     }
 }
 
@@ -148,7 +172,10 @@ mod tests {
 
     #[test]
     fn test_day10_part1() {
-        let loop_map = compute_loop(parse_input(read_input("test/day10.1")), 'F');
+        let raw_map = parse_input(read_input("test/day10.1"));
+        print!("{}", raw_map);
+        let loop_map = compute_loop(raw_map, 'F');
+        print!("{}", loop_map);
         assert_eq!(loop_map.max_by(|tile| tile.position_in_loop), 8);
     }
 
