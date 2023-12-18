@@ -8,8 +8,8 @@ pub fn run(input: String) {
     let loop_map = compute_loop(raw_map, '-');
     println!("Part 1: {}", loop_map.max_by(|tile| tile.position_in_loop));
 
-    let enclosed_map = enclosed_loop(loop_map, '-');
-    println!("Part 2: {}", 42);
+    let enclosed_map = enclosed_loop(loop_map);
+    println!("Part 2: {}", enclosed_map.count_where(|t| t.enclosed));
 }
 
 fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
@@ -72,8 +72,8 @@ fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
     Map::new(smart_map)
 }
 
-fn enclosed_loop(map: Map<SmartTile>, start_tile: char) -> Map<SmarterTile> {
-    let mut smarter_map = map
+fn enclosed_loop(map: Map<SmartTile>) -> Map<SmarterTile> {
+    let smarter_map = map
         .iter()
         .map(|(p, t)| {
             (
@@ -123,7 +123,7 @@ struct SmartTile {
 impl Display for SmartTile {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.position_in_loop.is_some() {
-            write!(f, "\x1b[93m{}\x1b[0m", self.kind)
+            write!(f, "\x1b[93m{}\x1b[0m", self.position_in_loop.unwrap())
         } else {
             write!(f, "{}", self.kind)
         }
@@ -222,7 +222,7 @@ mod tests {
         print!("{}", raw_map);
         let loop_map = compute_loop(raw_map, 'F');
         print!("{}", loop_map);
-        let enclosed_map = enclosed_loop(loop_map, 'F');
+        let enclosed_map = enclosed_loop(loop_map);
         assert_eq!(enclosed_map.count_where(|t| t.enclosed), 4);
     }
 
