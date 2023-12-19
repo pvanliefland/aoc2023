@@ -8,8 +8,10 @@ pub fn run(input: String) {
     let loop_map = compute_loop(raw_map, '-');
     println!("Part 1: {}", loop_map.max_by(|tile| tile.position_in_loop));
 
-    let enclosed_map = enclosed_loop(loop_map);
-    println!("Part 2: {}", enclosed_map.count_where(|t| t.enclosed));
+    println!(
+        "Part 2: {}",
+        find_enclosed(loop_map).count_where(|t| t.enclosed)
+    );
 }
 
 fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
@@ -72,7 +74,7 @@ fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
     Map::new(smart_map)
 }
 
-fn enclosed_loop(map: Map<SmartTile>) -> Map<SmarterTile> {
+fn find_enclosed(map: Map<SmartTile>) -> Map<SmarterTile> {
     let smarter_map = map
         .iter()
         .map(|(p, t)| {
@@ -225,41 +227,37 @@ mod tests {
 
     #[test]
     fn test_day10_part21() {
-        let raw_map = parse_input(read_input("test/day10.2.1"));
-        print!("{}", raw_map);
-        let loop_map = compute_loop(raw_map, 'F');
-        print!("{}", loop_map);
-        let enclosed_map = enclosed_loop(loop_map);
-        assert_eq!(enclosed_map.count_where(|t| t.enclosed), 4);
+        assert_eq!(
+            find_enclosed(compute_loop(parse_input(read_input("test/day10.2.1")), 'F'))
+                .count_where(|t| t.enclosed),
+            4
+        );
     }
 
     #[test]
     fn test_day10_part22() {
-        let raw_map = parse_input(read_input("test/day10.2.2"));
-        print!("{}", raw_map);
-        let loop_map = compute_loop(raw_map, 'F');
-        print!("{}", loop_map);
-        let enclosed_map = enclosed_loop(loop_map);
-        assert_eq!(enclosed_map.count_where(|t| t.enclosed), 4);
+        assert_eq!(
+            find_enclosed(compute_loop(parse_input(read_input("test/day10.2.2")), 'F'))
+                .count_where(|t| t.enclosed),
+            4
+        );
     }
 
     #[test]
     fn test_day10_part23() {
-        let raw_map = parse_input(read_input("test/day10.2.3"));
-        print!("{}", raw_map);
-        let loop_map = compute_loop(raw_map, 'F');
-        print!("{}", loop_map);
-        let enclosed_map = enclosed_loop(loop_map);
-        assert_eq!(enclosed_map.count_where(|t| t.enclosed), 8);
+        assert_eq!(
+            find_enclosed(compute_loop(parse_input(read_input("test/day10.2.3")), 'F'))
+                .count_where(|t| t.enclosed),
+            8
+        );
     }
 
     #[test]
     fn test_day10_part24() {
-        let raw_map = parse_input(read_input("test/day10.2.4"));
-        print!("{}", raw_map);
-        let loop_map = compute_loop(raw_map, '7');
-        print!("{}", loop_map);
-        let enclosed_map = enclosed_loop(loop_map);
-        assert_eq!(enclosed_map.count_where(|t| t.enclosed), 10);
+        assert_eq!(
+            find_enclosed(compute_loop(parse_input(read_input("test/day10.2.4")), '7'))
+                .count_where(|t| t.enclosed),
+            10
+        );
     }
 }
