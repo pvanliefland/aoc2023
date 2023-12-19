@@ -76,40 +76,47 @@ fn enclosed_loop(map: Map<SmartTile>) -> Map<SmarterTile> {
     let smarter_map = map
         .iter()
         .map(|(p, t)| {
+            let enclosed = if t.position_in_loop.is_some() {
+                false
+            } else {
+                let mut changes = 0;
+                let mut current_boundary = None;
+                for x in (p.0 + 1)..=map.max_xy.0 {
+                    let tile = map.map.get(&(x, p.1)).expect("🙄");
+                    if tile.position_in_loop.is_some() {
+                        match (current_boundary, tile.kind) {
+                            (_, '|') => {
+                                changes += 1;
+                                current_boundary = None;
+                            }
+                            (None, 'L' | 'F') => {
+                                changes += 1;
+                                current_boundary = Some(tile.kind);
+                            }
+                            (Some('F'), '7') | (Some('L'), 'J') => {
+                                changes += 1;
+                                current_boundary = None;
+                            }
+                            (Some('F'), 'J') | (Some('L'), '7') => {
+                                current_boundary = None;
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+
+                changes % 2 == 1
+            };
             (
                 *p,
                 SmarterTile {
                     kind: t.kind,
                     position_in_loop: t.position_in_loop,
-                    enclosed: false,
+                    enclosed,
                 },
             )
         })
         .collect::<HashMap<_, _>>();
-    let start = smarter_map
-        .iter()
-        .find_map(|(p, c)| if c.kind == 'S' { Some(*p) } else { None })
-        .expect("☢️");
-
-    let enclosed = smarter_map
-        .iter()
-        .filter(|(_, t)| t.position_in_loop.is_none())
-        .filter(|(p, _)| {
-            (p.0..map.max_xy.0)
-                .filter(|&x| {
-                    let ray_pos = (x, p.1);
-                    let tile_at_ray_pos = map.map.get(&ray_pos).expect("☢️");
-                    tile_at_ray_pos.position_in_loop.is_some_and(|_| {
-                        ['|', 'F', '7'].contains(&tile_at_ray_pos.kind)
-                            || ray_pos == start && ['|', 'F', '7'].contains(&tile_at_ray_pos.kind)
-                    })
-                })
-                .count()
-                % 2
-                == 1
-        })
-        .collect::<Vec<_>>();
-    dbg!(&&enclosed);
 
     Map::new(smarter_map)
 }
@@ -123,7 +130,7 @@ struct SmartTile {
 impl Display for SmartTile {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.position_in_loop.is_some() {
-            write!(f, "\x1b[93m{}\x1b[0m", self.position_in_loop.unwrap())
+            write!(f, "\x1b[93m{}\x1b[0m", self.kind)
         } else {
             write!(f, "{}", self.kind)
         }
@@ -218,7 +225,7 @@ mod tests {
 
     #[test]
     fn test_day10_part21() {
-        let raw_map = parse_input(read_input("test/day10.1"));
+        let raw_map = parse_input(read_input("test/day10.2.1"));
         print!("{}", raw_map);
         let loop_map = compute_loop(raw_map, 'F');
         print!("{}", loop_map);
@@ -226,27 +233,33 @@ mod tests {
         assert_eq!(enclosed_map.count_where(|t| t.enclosed), 4);
     }
 
-    /*#[ignore]
     #[test]
     fn test_day10_part22() {
-        let mut navigator = parse_input(read_input("test/day10.2.2"), 'F');
-        navigator.longest_segment();
-        assert_eq!(navigator.enclosed(), 4);
+        let raw_map = parse_input(read_input("test/day10.2.2"));
+        print!("{}", raw_map);
+        let loop_map = compute_loop(raw_map, 'F');
+        print!("{}", loop_map);
+        let enclosed_map = enclosed_loop(loop_map);
+        assert_eq!(enclosed_map.count_where(|t| t.enclosed), 4);
     }
 
-    #[ignore]
     #[test]
     fn test_day10_part23() {
-        let mut navigator = parse_input(read_input("test/day10.2.3"), 'F');
-        navigator.longest_segment();
-        assert_eq!(navigator.enclosed(), 8);
+        let raw_map = parse_input(read_input("test/day10.2.3"));
+        print!("{}", raw_map);
+        let loop_map = compute_loop(raw_map, 'F');
+        print!("{}", loop_map);
+        let enclosed_map = enclosed_loop(loop_map);
+        assert_eq!(enclosed_map.count_where(|t| t.enclosed), 8);
     }
 
-    #[ignore]
     #[test]
     fn test_day10_part24() {
-        let mut navigator = parse_input(read_input("test/day10.2.4"), '7');
-        navigator.longest_segment();
-        assert_eq!(navigator.enclosed(), 10);
-    }*/
+        let raw_map = parse_input(read_input("test/day10.2.4"));
+        print!("{}", raw_map);
+        let loop_map = compute_loop(raw_map, '7');
+        print!("{}", loop_map);
+        let enclosed_map = enclosed_loop(loop_map);
+        assert_eq!(enclosed_map.count_where(|t| t.enclosed), 10);
+    }
 }
