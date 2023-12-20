@@ -9,15 +9,16 @@ pub fn run(input: String) {
     println!("Part 2: {}", find_enclosed(map).count_where(|t| t.enclosed));
 }
 
-fn build_map(map_data: HashMap<(isize, isize), char>, start_tile: char) -> Map<SmartTile> {
+fn build_map(map_data: HashMap<(isize, isize), char>, start_tile: char) -> Map {
     let mut tiles = map_data
         .iter()
         .map(|(p, t)| {
             (
                 *p,
-                SmartTile {
+                Tile {
                     kind: *t,
                     position_in_loop: if *t == 'S' { Some(0) } else { None },
+                    enclosed: false,
                 },
             )
         })
@@ -66,7 +67,7 @@ fn build_map(map_data: HashMap<(isize, isize), char>, start_tile: char) -> Map<S
     Map::new(tiles)
 }
 
-fn find_enclosed(map: Map<SmartTile>) -> Map<SmarterTile> {
+fn find_enclosed(map: Map) -> Map {
     let smarter_map = map
         .iter()
         .map(|(p, t)| {
@@ -103,7 +104,7 @@ fn find_enclosed(map: Map<SmartTile>) -> Map<SmarterTile> {
             };
             (
                 *p,
-                SmarterTile {
+                Tile {
                     kind: t.kind,
                     position_in_loop: t.position_in_loop,
                     enclosed,
@@ -114,30 +115,14 @@ fn find_enclosed(map: Map<SmartTile>) -> Map<SmarterTile> {
 
     Map::new(smarter_map)
 }
-
 #[derive(Debug)]
-struct SmartTile {
-    kind: char,
-    position_in_loop: Option<usize>,
-}
-
-impl Display for SmartTile {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.position_in_loop.is_some() {
-            write!(f, "\x1b[93m{}\x1b[0m", self.kind)
-        } else {
-            write!(f, "{}", self.kind)
-        }
-    }
-}
-#[derive(Debug)]
-struct SmarterTile {
+struct Tile {
     kind: char,
     position_in_loop: Option<usize>,
     enclosed: bool,
 }
 
-impl Display for SmarterTile {
+impl Display for Tile {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.position_in_loop.is_some() {
             write!(f, "\x1b[93m{}\x1b[0m", self.kind)
@@ -149,31 +134,31 @@ impl Display for SmarterTile {
     }
 }
 
-struct Map<T: Display> {
-    map: HashMap<(isize, isize), T>,
+struct Map {
+    map: HashMap<(isize, isize), Tile>,
     max_xy: (isize, isize),
 }
 
-impl<T: Display> Map<T> {
-    pub fn new(map: HashMap<(isize, isize), T>) -> Self {
+impl Map {
+    pub fn new(map: HashMap<(isize, isize), Tile>) -> Self {
         let max_xy = *(map.keys().max().expect("😅"));
         Self { map, max_xy }
     }
 
-    fn max_by(&self, by_fn: fn(&T) -> Option<usize>) -> usize {
+    fn max_by(&self, by_fn: fn(&Tile) -> Option<usize>) -> usize {
         self.map.values().filter_map(by_fn).max().expect("😅")
     }
 
-    fn count_where(&self, where_fn: fn(&&T) -> bool) -> usize {
+    fn count_where(&self, where_fn: fn(&&Tile) -> bool) -> usize {
         self.map.values().filter(where_fn).count()
     }
 
-    fn iter(&self) -> Iter<'_, (isize, isize), T> {
+    fn iter(&self) -> Iter<'_, (isize, isize), Tile> {
         self.map.iter()
     }
 }
 
-impl<T: Display> Display for Map<T> {
+impl Display for Map {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut output = String::new();
         for y in 0..=self.max_xy.1 {
