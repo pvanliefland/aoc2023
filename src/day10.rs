@@ -3,19 +3,14 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
 pub fn run(input: String) {
-    let raw_map = parse_input(input);
+    let map = build_map(parse_input(input), '-');
 
-    let loop_map = compute_loop(raw_map, '-');
-    println!("Part 1: {}", loop_map.max_by(|tile| tile.position_in_loop));
-
-    println!(
-        "Part 2: {}",
-        find_enclosed(loop_map).count_where(|t| t.enclosed)
-    );
+    println!("Part 1: {}", map.max_by(|tile| tile.position_in_loop));
+    println!("Part 2: {}", find_enclosed(map).count_where(|t| t.enclosed));
 }
 
-fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
-    let mut smart_map = map
+fn build_map(map_data: HashMap<(isize, isize), char>, start_tile: char) -> Map<SmartTile> {
+    let mut tiles = map_data
         .iter()
         .map(|(p, t)| {
             (
@@ -27,7 +22,7 @@ fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
             )
         })
         .collect::<HashMap<_, _>>();
-    let start = smart_map
+    let start = tiles
         .iter()
         .find_map(|(p, c)| if c.kind == 'S' { Some(*p) } else { None })
         .expect("☢️");
@@ -41,7 +36,7 @@ fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
             let tile = if current_position == start {
                 start_tile
             } else {
-                smart_map.get(&current_position).expect("😅").kind
+                tiles.get(&current_position).expect("😅").kind
             };
             let mut possible_next_positions = (match tile {
                 '|' => [(0, 1), (0, -1)],
@@ -62,16 +57,13 @@ fn compute_loop(map: Map<char>, start_tile: char) -> Map<SmartTile> {
                 .expect("🙄");
             previous_positions[i] = current_position;
             current_positions[i] = next_position;
-            smart_map
-                .get_mut(&next_position)
-                .expect("😭")
-                .position_in_loop = Some(steps);
+            tiles.get_mut(&next_position).expect("😭").position_in_loop = Some(steps);
         });
         if current_positions[0] == current_positions[1] {
             break;
         }
     }
-    Map::new(smart_map)
+    Map::new(tiles)
 }
 
 fn find_enclosed(map: Map<SmartTile>) -> Map<SmarterTile> {
@@ -196,19 +188,17 @@ impl<T: Display> Display for Map<T> {
     }
 }
 
-fn parse_input(input: String) -> Map<char> {
-    Map::new(
-        input
-            .lines()
-            .enumerate()
-            .flat_map(|(y, l)| {
-                l.chars()
-                    .enumerate()
-                    .map(|(x, c)| ((x as isize, y as isize), c))
-                    .collect::<Vec<_>>()
-            })
-            .collect::<HashMap<_, _>>(),
-    )
+fn parse_input(input: String) -> HashMap<(isize, isize), char> {
+    input
+        .lines()
+        .enumerate()
+        .flat_map(|(y, l)| {
+            l.chars()
+                .enumerate()
+                .map(|(x, c)| ((x as isize, y as isize), c))
+                .collect::<Vec<_>>()
+        })
+        .collect::<HashMap<_, _>>()
 }
 
 #[cfg(test)]
@@ -218,17 +208,17 @@ mod tests {
 
     #[test]
     fn test_day10_part1() {
-        let raw_map = parse_input(read_input("test/day10.1"));
-        print!("{}", raw_map);
-        let loop_map = compute_loop(raw_map, 'F');
-        print!("{}", loop_map);
-        assert_eq!(loop_map.max_by(|tile| tile.position_in_loop), 8);
+        assert_eq!(
+            build_map(parse_input(read_input("test/day10.1")), 'F')
+                .max_by(|tile| tile.position_in_loop),
+            8
+        );
     }
 
     #[test]
     fn test_day10_part21() {
         assert_eq!(
-            find_enclosed(compute_loop(parse_input(read_input("test/day10.2.1")), 'F'))
+            find_enclosed(build_map(parse_input(read_input("test/day10.2.1")), 'F'))
                 .count_where(|t| t.enclosed),
             4
         );
@@ -237,7 +227,7 @@ mod tests {
     #[test]
     fn test_day10_part22() {
         assert_eq!(
-            find_enclosed(compute_loop(parse_input(read_input("test/day10.2.2")), 'F'))
+            find_enclosed(build_map(parse_input(read_input("test/day10.2.2")), 'F'))
                 .count_where(|t| t.enclosed),
             4
         );
@@ -246,7 +236,7 @@ mod tests {
     #[test]
     fn test_day10_part23() {
         assert_eq!(
-            find_enclosed(compute_loop(parse_input(read_input("test/day10.2.3")), 'F'))
+            find_enclosed(build_map(parse_input(read_input("test/day10.2.3")), 'F'))
                 .count_where(|t| t.enclosed),
             8
         );
@@ -255,7 +245,7 @@ mod tests {
     #[test]
     fn test_day10_part24() {
         assert_eq!(
-            find_enclosed(compute_loop(parse_input(read_input("test/day10.2.4")), '7'))
+            find_enclosed(build_map(parse_input(read_input("test/day10.2.4")), '7'))
                 .count_where(|t| t.enclosed),
             10
         );
