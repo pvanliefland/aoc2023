@@ -1,4 +1,3 @@
-use std::collections::hash_map::Iter;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
@@ -6,7 +5,7 @@ pub fn run(input: String) {
     let map = build_map(parse_input(input), '-');
 
     println!("Part 1: {}", map.max_by(|tile| tile.position_in_loop));
-    println!("Part 2: {}", find_enclosed(map).count_where(|t| t.enclosed));
+    println!("Part 2: {}", map.count_enclosed());
 }
 
 fn build_map(map_data: HashMap<(isize, isize), char>, start_tile: char) -> Map {
@@ -67,54 +66,6 @@ fn build_map(map_data: HashMap<(isize, isize), char>, start_tile: char) -> Map {
     Map::new(tiles)
 }
 
-fn find_enclosed(map: Map) -> Map {
-    let smarter_map = map
-        .iter()
-        .map(|(p, t)| {
-            let enclosed = if t.position_in_loop.is_some() {
-                false
-            } else {
-                let mut changes = 0;
-                let mut current_boundary = None;
-                for x in (p.0 + 1)..=map.max_xy.0 {
-                    let tile = map.map.get(&(x, p.1)).expect("🙄");
-                    if tile.position_in_loop.is_some() {
-                        match (current_boundary, tile.kind) {
-                            (_, '|') => {
-                                changes += 1;
-                                current_boundary = None;
-                            }
-                            (None, 'L' | 'F') => {
-                                changes += 1;
-                                current_boundary = Some(tile.kind);
-                            }
-                            (Some('F'), '7') | (Some('L'), 'J') => {
-                                changes += 1;
-                                current_boundary = None;
-                            }
-                            (Some('F'), 'J') | (Some('L'), '7') => {
-                                current_boundary = None;
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-
-                changes % 2 == 1
-            };
-            (
-                *p,
-                Tile {
-                    kind: t.kind,
-                    position_in_loop: t.position_in_loop,
-                    enclosed,
-                },
-            )
-        })
-        .collect::<HashMap<_, _>>();
-
-    Map::new(smarter_map)
-}
 #[derive(Debug)]
 struct Tile {
     kind: char,
@@ -149,12 +100,43 @@ impl Map {
         self.map.values().filter_map(by_fn).max().expect("😅")
     }
 
-    fn count_where(&self, where_fn: fn(&&Tile) -> bool) -> usize {
-        self.map.values().filter(where_fn).count()
-    }
+    fn count_enclosed(&self) -> usize {
+        self.map
+            .iter()
+            .filter(|(p, t)| {
+                if t.position_in_loop.is_some() {
+                    false
+                } else {
+                    let mut changes = 0;
+                    let mut current_boundary = None;
+                    for x in (p.0 + 1)..=self.max_xy.0 {
+                        let tile = self.map.get(&(x, p.1)).expect("🙄");
+                        if tile.position_in_loop.is_some() {
+                            match (current_boundary, tile.kind) {
+                                (_, '|') => {
+                                    changes += 1;
+                                    current_boundary = None;
+                                }
+                                (None, 'L' | 'F') => {
+                                    changes += 1;
+                                    current_boundary = Some(tile.kind);
+                                }
+                                (Some('F'), '7') | (Some('L'), 'J') => {
+                                    changes += 1;
+                                    current_boundary = None;
+                                }
+                                (Some('F'), 'J') | (Some('L'), '7') => {
+                                    current_boundary = None;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
 
-    fn iter(&self) -> Iter<'_, (isize, isize), Tile> {
-        self.map.iter()
+                    changes % 2 == 1
+                }
+            })
+            .count()
     }
 }
 
@@ -203,8 +185,7 @@ mod tests {
     #[test]
     fn test_day10_part21() {
         assert_eq!(
-            find_enclosed(build_map(parse_input(read_input("test/day10.2.1")), 'F'))
-                .count_where(|t| t.enclosed),
+            build_map(parse_input(read_input("test/day10.2.1")), 'F').count_enclosed(),
             4
         );
     }
@@ -212,8 +193,7 @@ mod tests {
     #[test]
     fn test_day10_part22() {
         assert_eq!(
-            find_enclosed(build_map(parse_input(read_input("test/day10.2.2")), 'F'))
-                .count_where(|t| t.enclosed),
+            build_map(parse_input(read_input("test/day10.2.2")), 'F').count_enclosed(),
             4
         );
     }
@@ -221,8 +201,7 @@ mod tests {
     #[test]
     fn test_day10_part23() {
         assert_eq!(
-            find_enclosed(build_map(parse_input(read_input("test/day10.2.3")), 'F'))
-                .count_where(|t| t.enclosed),
+            build_map(parse_input(read_input("test/day10.2.3")), 'F').count_enclosed(),
             8
         );
     }
@@ -230,8 +209,7 @@ mod tests {
     #[test]
     fn test_day10_part24() {
         assert_eq!(
-            find_enclosed(build_map(parse_input(read_input("test/day10.2.4")), '7'))
-                .count_where(|t| t.enclosed),
+            build_map(parse_input(read_input("test/day10.2.4")), '7').count_enclosed(),
             10
         );
     }
