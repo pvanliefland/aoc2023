@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 pub fn run(input: String) {
-    let map = build_map(parse_input(input), '-');
+    let map = build_map(parse_input(input));
 
     println!("Part 1: {}", map.max_by(|tile| tile.position_in_loop));
     println!("Part 2: {}", map.count_enclosed());
 }
 
-fn build_map(map_data: HashMap<(isize, isize), char>, start_tile: char) -> Map {
+fn build_map(map_data: HashMap<(isize, isize), char>) -> Map {
     let mut tiles = map_data
         .iter()
         .map(|(p, t)| {
@@ -31,28 +31,43 @@ fn build_map(map_data: HashMap<(isize, isize), char>, start_tile: char) -> Map {
         steps += 1;
         [0usize, 1].iter().for_each(|&i| {
             let current_position = current_positions[i];
-            let tile = if current_position == start {
-                start_tile
+            let possible_moves = if current_position == start {
+                let moves = [
+                    ((0, 1), ['|', 'J', 'L']),
+                    ((1, 0), ['-', 'J', '7']),
+                    ((0, -1), ['|', '7', 'F']),
+                    ((-1, 0), ['-', 'L', 'F']),
+                ]
+                .into_iter()
+                .filter_map(|(m, kinds)| {
+                    tiles
+                        .get(&(current_position.0 + m.0, current_position.1 + m.1))
+                        .and_then(|tile| kinds.contains(&tile.kind).then_some(m))
+                })
+                .collect::<Vec<_>>();
+                if steps == 1 && i == 1 {
+                    [moves[1], moves[0]]
+                } else {
+                    [moves[0], moves[1]]
+                }
             } else {
-                tiles.get(&current_position).expect("😅").kind
+                match tiles.get(&current_position).expect("😅").kind {
+                    '|' => [(0, 1), (0, -1)],
+                    '-' => [(1, 0), (-1, 0)],
+                    'L' => [(0, -1), (1, 0)],
+                    'J' => [(0, -1), (-1, 0)],
+                    '7' => [(0, 1), (-1, 0)],
+                    'F' => [(0, 1), (1, 0)],
+                    o => panic!("{} 😰", o),
+                }
             };
-            let mut possible_next_positions = (match tile {
-                '|' => [(0, 1), (0, -1)],
-                '-' => [(1, 0), (-1, 0)],
-                'L' => [(0, -1), (1, 0)],
-                'J' => [(0, -1), (-1, 0)],
-                '7' => [(0, 1), (-1, 0)],
-                'F' => [(0, 1), (1, 0)],
-                _ => panic!("{} 😰", tile),
-            })
-            .map(|(dx, dy)| (current_position.0 + dx, current_position.1 + dy));
-            if steps == 1 && i == 1 {
-                possible_next_positions.reverse();
-            }
-            let next_position = *possible_next_positions
+
+            let next_position = *possible_moves
+                .map(|(dx, dy)| (current_position.0 + dx, current_position.1 + dy))
                 .iter()
                 .find(|pipe| !previous_positions.contains(pipe))
                 .expect("🙄");
+
             previous_positions[i] = current_position;
             current_positions[i] = next_position;
             tiles.get_mut(&next_position).expect("😭").position_in_loop = Some(steps);
@@ -145,8 +160,7 @@ mod tests {
     #[test]
     fn test_day10_part1() {
         assert_eq!(
-            build_map(parse_input(read_input("test/day10.1")), 'F')
-                .max_by(|tile| tile.position_in_loop),
+            build_map(parse_input(read_input("test/day10.1"))).max_by(|tile| tile.position_in_loop),
             8
         );
     }
@@ -154,7 +168,7 @@ mod tests {
     #[test]
     fn test_day10_part21() {
         assert_eq!(
-            build_map(parse_input(read_input("test/day10.2.1")), 'F').count_enclosed(),
+            build_map(parse_input(read_input("test/day10.2.1"))).count_enclosed(),
             4
         );
     }
@@ -162,7 +176,7 @@ mod tests {
     #[test]
     fn test_day10_part22() {
         assert_eq!(
-            build_map(parse_input(read_input("test/day10.2.2")), 'F').count_enclosed(),
+            build_map(parse_input(read_input("test/day10.2.2"))).count_enclosed(),
             4
         );
     }
@@ -170,7 +184,7 @@ mod tests {
     #[test]
     fn test_day10_part23() {
         assert_eq!(
-            build_map(parse_input(read_input("test/day10.2.3")), 'F').count_enclosed(),
+            build_map(parse_input(read_input("test/day10.2.3"))).count_enclosed(),
             8
         );
     }
@@ -178,7 +192,7 @@ mod tests {
     #[test]
     fn test_day10_part24() {
         assert_eq!(
-            build_map(parse_input(read_input("test/day10.2.4")), '7').count_enclosed(),
+            build_map(parse_input(read_input("test/day10.2.4"))).count_enclosed(),
             10
         );
     }
