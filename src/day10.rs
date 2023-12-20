@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn test_day10_part1() {
         assert_eq!(
-            build_map(parse_input(read_input("test/day10.1"))).max_by(|tile| tile.position_in_loop),
+            build_map(parse_input(read_input("test/day10.1"))).loop_length(),
             8
         );
     }
