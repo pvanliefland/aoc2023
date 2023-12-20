@@ -3,7 +3,7 @@ use std::collections::HashMap;
 pub fn run(input: String) {
     let map = build_map(parse_input(input));
 
-    println!("Part 1: {}", map.max_by(|tile| tile.position_in_loop));
+    println!("Part 1: {}", map.loop_length());
     println!("Part 2: {}", map.count_enclosed());
 }
 
@@ -95,8 +95,12 @@ impl Map {
         Self { map, max_xy }
     }
 
-    fn max_by(&self, by_fn: fn(&Tile) -> Option<usize>) -> usize {
-        self.map.values().filter_map(by_fn).max().expect("😅")
+    fn loop_length(&self) -> usize {
+        self.map
+            .values()
+            .filter_map(|tile| tile.position_in_loop)
+            .max()
+            .expect("😅")
     }
 
     fn count_enclosed(&self) -> usize {
