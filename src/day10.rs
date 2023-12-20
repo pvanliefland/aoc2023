@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
 
 pub fn run(input: String) {
     let map = build_map(parse_input(input), '-');
@@ -17,7 +16,6 @@ fn build_map(map_data: HashMap<(isize, isize), char>, start_tile: char) -> Map {
                 Tile {
                     kind: *t,
                     position_in_loop: if *t == 'S' { Some(0) } else { None },
-                    enclosed: false,
                 },
             )
         })
@@ -66,23 +64,9 @@ fn build_map(map_data: HashMap<(isize, isize), char>, start_tile: char) -> Map {
     Map::new(tiles)
 }
 
-#[derive(Debug)]
 struct Tile {
     kind: char,
     position_in_loop: Option<usize>,
-    enclosed: bool,
-}
-
-impl Display for Tile {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.position_in_loop.is_some() {
-            write!(f, "\x1b[93m{}\x1b[0m", self.kind)
-        } else if self.enclosed {
-            write!(f, "\x1b[97m{}\x1b[0m", self.position_in_loop.unwrap())
-        } else {
-            write!(f, "{}", self.kind)
-        }
-    }
 }
 
 struct Map {
@@ -137,21 +121,6 @@ impl Map {
                 }
             })
             .count()
-    }
-}
-
-impl Display for Map {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut output = String::new();
-        for y in 0..=self.max_xy.1 {
-            for x in 0..=self.max_xy.0 {
-                let tile = self.map.get(&(x, y)).expect("😅");
-                output.push_str(&format!("{}", tile));
-            }
-            output.push('\n');
-        }
-        output.push('\n');
-        f.write_str(&output)
     }
 }
 
