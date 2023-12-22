@@ -15,6 +15,7 @@ fn main() {
         aoc2023::day08::run,
         aoc2023::day09::run,
         aoc2023::day10::run,
+        aoc2023::day11::run,
     ];
 
     let range = if let Some(day) = env::args().nth(1) {
