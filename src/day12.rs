@@ -4,10 +4,7 @@ pub fn run(input: String) {
     let springs_condition = parse_input(&input);
     let arrangements = find_arrangements(springs_condition);
 
-    println!(
-        "Part 1: {}",
-        arrangements.iter().map(|a| a.len()).sum::<usize>()
-    );
+    println!("Part 1: {}", arrangements.len());
 
     println!("Part 1: {}", 42);
 }
