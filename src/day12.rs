@@ -26,11 +26,6 @@ fn find_arrangements(springs_conditions: Vec<(Vec<char>, Vec<usize>)>) -> Vec<Ve
                 .collect::<Vec<_>>();
             // test the condition by counting consecutive broken springs
             let candidate_string = candidate_condition.iter().collect::<String>();
-            for &expected_count in counts {
-                if !candidate_string.contains(&"#".repeat(expected_count)) {
-                    continue;
-                }
-            }
             let candidate_counts = candidate_string
                 .split('.')
                 .filter(|p| !p.is_empty())
